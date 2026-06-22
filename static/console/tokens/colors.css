@@ -1,0 +1,67 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * COLORS — Gateway Console
+ * Base palette (slate neutrals + signal blue) carried forward from the source
+ * console, formalized into a scale, plus semantic surface/text/status aliases.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ─ Neutral · slate ───────────────────────────────────────────────────── */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+  --white:     #ffffff;
+
+  /* ─ Brand · signal blue (primary action + provisioning) ───────────────── */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;  /* primary */
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+
+  /* ─ Signal · raw hues (status model is built from these) ──────────────── */
+  --green-50:  #f0fdf4;  --green-100: #dcfce7;  --green-500: #22c55e;
+  --green-600: #16a34a;  --green-700: #15803d;  --green-800: #166534;
+  --amber-50:  #fffbeb;  --amber-100: #fef3c7;  --amber-500: #f59e0b;
+  --amber-600: #d97706;  --amber-700: #b45309;  --amber-800: #92400e;
+  --red-50:    #fef2f2;  --red-100:   #fee2e2;  --red-500:   #ef4444;
+  --red-600:   #dc2626;  --red-700:   #b91c1c;  --red-800:   #991b1b;
+
+  /* ─ Semantic · surfaces ───────────────────────────────────────────────── */
+  --surface-app:     var(--slate-50);    /* page background                  */
+  --surface-card:    var(--white);       /* cards, panels, rows              */
+  --surface-sunken:  var(--slate-100);   /* wells, code blocks, inset areas  */
+  --surface-chrome:  var(--slate-900);   /* sidebar / top chrome (dark)      */
+  --surface-chrome-2:var(--slate-950);   /* deepest chrome                   */
+  --surface-overlay: rgba(2, 6, 23, 0.55); /* modal scrim                    */
+  --surface-hover:   var(--slate-100);   /* row / button hover               */
+
+  /* ─ Semantic · text ───────────────────────────────────────────────────── */
+  --text-strong:  var(--slate-900);  /* headings, primary values            */
+  --text-body:    var(--slate-800);  /* body                                */
+  --text-muted:   var(--slate-500);  /* secondary, labels                   */
+  --text-faint:   var(--slate-400);  /* timestamps, hints                   */
+  --text-invert:  var(--white);      /* on dark chrome / solid buttons      */
+  --text-link:    var(--blue-700);
+
+  /* ─ Semantic · borders ────────────────────────────────────────────────── */
+  --border-subtle: var(--slate-200);
+  --border-default:var(--slate-300);
+  --border-strong: var(--slate-400);
+  --border-chrome: rgba(255, 255, 255, 0.08); /* dividers on dark chrome     */
+
+  /* ─ Brand action ─────────────────────────────────────────────────────── */
+  --action:        var(--blue-600);
+  --action-hover:  var(--blue-700);
+  --action-text:   var(--white);
+  --focus-ring:    var(--blue-500);
+}

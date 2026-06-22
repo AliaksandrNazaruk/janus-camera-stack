@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <title>RealSense Depth Viewer</title>
+  <link rel="stylesheet" href="{{ api_prefix }}/static/css/player.css?v=2">
+  <link rel="stylesheet" href="{{ api_prefix }}/static/css/player-depth.css">
+  {# P0-SEC-001: MUST load first — wraps fetch/EventSource/WebSocket so all
+     subsequent player JS auto-injects X-Viewer-Token header / ?token= query. #}
+  <script src="{{ api_prefix }}/viewer_auth_bootstrap.js"></script>
+  <script src="{{ api_prefix }}/janus.js"></script>
+  <script src="{{ api_prefix }}/static/js/vendor/webrtc-adapter-8.2.3.js?v=1"
+          integrity="sha384-M+1CvSefTCcyL3Ltxapd+H+xrPcE+qsWuFfm4UmxzWvMnL9OUXKl5Q/23MmynaLq"></script>
+  <!-- Clean-architecture player scripts (no bundler; namespace-based) -->
+  <script src="{{ api_prefix }}/player/ns.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/config.js?v=5"></script>
+
+  <script src="{{ api_prefix }}/player/core/player_state.js?v=3"></script>
+  <script src="{{ api_prefix }}/player/core/codes.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/domain_events.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/connection_policy.js?v=4"></script>
+  <script src="{{ api_prefix }}/player/core/state_machine_canonical.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/invariants.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/fail_closed.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/backoff.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/recovery_policy.js?v=3"></script>
+
+  <script src="{{ api_prefix }}/player/ports/clock_port.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/ports/logger_port.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/ports/streaming_port.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/ports/video_port.js?v=2"></script>
+
+  <script src="{{ api_prefix }}/player/adapters/clock.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/adapters/logger.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/adapters/janus_session_manager.js?v=3"></script>
+  <script src="{{ api_prefix }}/player/adapters/dom_ui_adapter.js?v=5"></script>
+  <script src="{{ api_prefix }}/player/adapters/janus_streaming_adapter.js?v=4"></script>
+  <script src="{{ api_prefix }}/player/adapters/janus_textroom_adapter.js?v=3"></script>
+  <script src="{{ api_prefix }}/player/adapters/back_channel.js?v=1"></script>
+
+  <script src="{{ api_prefix }}/player/app/stats_service.js?v=5"></script>
+  <script src="{{ api_prefix }}/player/app/recovery_map.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/reconnect_coordinator.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/timer_coordinator.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/watchdog_service.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/player_controller.js?v=5"></script>
+  <script src="{{ api_prefix }}/player/bootstrap.js?v=3"></script>
+
+  <!-- Generic depth probe (click-to-depth via textroom + SSE) — part of core stack -->
+  <script src="{{ api_prefix }}/depth_features.js?v=17" defer></script>
+  {# X3.3 — robot-specific overlays (gripper jaw projection, custom HUDs, etc)
+     should live in a robot-specific wrapper, not in the generic depth_view. If you want
+     to add one — wrap depth_view.html in a robot-wrapper.html that injects
+     gripper_reticle.js + data-gripper-* attrs.  #}
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body
+  style="--video-rotation: {{ camera_rotation_deg | default(0) }}deg;"
+  data-style-nonce="{{ style_nonce }}"
+  data-prefer-stream-id="{{ stream_id | default(1306) }}"
+  data-stream-name="RealSense Depth"
+  data-api-prefix="{{ api_prefix }}"
+  data-autoplay="1"
+  data-debug-panel="0"
+  data-auto-restart="local"
+  data-joystick-mode="off"
+  data-stream-only="1"
+  data-no-frame-threshold-ms="{{ no_frame_threshold_ms | default(15000) }}"
+  data-track-mute-ms="{{ track_mute_ms | default(3000) }}"
+  data-watchdog-interval-ms="{{ watchdog_interval_ms | default(2000) }}"
+  data-connect-settle-ms="{{ connect_settle_ms | default(3000) }}"
+  data-session-timeout-ms="{{ session_timeout_ms | default(60000) }}"
+  data-client-config-path="{{ api_prefix }}/client-config"
+  data-depth-endpoint="/depth"
+  data-depth-hud="#depthHud"
+  data-depth-toast="#depthToast"
+  data-depth-probe-btn-id="reticleBtn"
+  data-depth-aligned="false"
+  {# Rotation contract — see depth_features.js viewportToFrame():
+       --video-rotation        : CSS baseline (rs-mux.env, for mount compensation)
+       data-frame-rotation     : current ffmpeg rotation (rs-{sensor}.tuning.env)
+       data-rotation-poll-url  : refresh frame-rotation after camera_config changes
+  #}
+  data-frame-rotation="{{ ffmpeg_rotation_deg | default(0) }}"
+  data-rotation-poll-url="{{ api_prefix }}/cameras/{{ device_serial }}/{{ sensor }}/rotation"
+>
+  <div id="statusPill" role="status" aria-live="polite"></div>
+  <pre id="debugPanel" aria-hidden="true"></pre>
+
+  <div class="controls" role="toolbar" aria-label="Player controls">
+    <button id="playBtn" type="button" aria-label="Play">Play</button>
+    <button id="statsBtn" type="button" aria-label="Toggle statistics">Show stats</button>
+    <!-- <button id="reticleBtn" type="button" aria-label="Measure depth">Measure depth</button> -->
+  </div>
+
+  <pre id="statsBox" aria-label="Stream statistics"></pre>
+  <video id="video" autoplay playsinline muted></video>
+
+  <div id="depthHud">x: ---, y: ---<br>depth: ---</div>
+  <div id="depthToast"></div>
+
+</body>
+</html>

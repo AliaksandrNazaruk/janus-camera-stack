@@ -1,0 +1,37 @@
+# Public configuration for camera-page L4.
+# Secrets are kept in 11-secrets.yaml (operator-provided, NOT committed).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camera-page-config
+  namespace: janus-camera-stack
+data:
+  CAM_TYPE: "color_camera"
+  JANUS_URL: "http://janus.janus-camera-stack.svc:8088/janus"
+  JANUS_HTTP: "http://janus.janus-camera-stack.svc:8088"
+  JANUS_WS_URL_1: "ws://janus.janus-camera-stack.svc:8188/janus-ws"
+  JANUS_ADMIN_URL: "http://janus.janus-camera-stack.svc:7088/admin"
+  STACK_DEFAULT_JOYSTICK_MODE: "off"
+  SENSOR_PLUGIN_DIR: "/etc/robot/plugins.d"
+  # Operator MUST override this with their TURN frontend hostname.
+  TURN_HOST: "turn.example.com"
+  TURN_REALM: "cloud.example.com"
+---
+# Operator-provided secrets. To create:
+#   kubectl create secret generic camera-page-secrets \
+#     --from-literal=TURN_SECRET=$(openssl rand -hex 32) \
+#     --from-literal=INTERNAL_API_SECRET=$(openssl rand -hex 32) \
+#     --from-literal=JANUS_ADMIN_SECRET=$(openssl rand -hex 32) \
+#     -n janus-camera-stack
+#
+# This stub is a placeholder showing required keys. Do NOT commit real values.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: camera-page-secrets
+  namespace: janus-camera-stack
+type: Opaque
+stringData:
+  TURN_SECRET: "REPLACE_ME_OPENSSL_RAND_HEX_32"
+  INTERNAL_API_SECRET: "REPLACE_ME_OPENSSL_RAND_HEX_32"
+  JANUS_ADMIN_SECRET: "REPLACE_ME_OPENSSL_RAND_HEX_32"

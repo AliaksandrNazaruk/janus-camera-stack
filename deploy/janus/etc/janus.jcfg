@@ -1,0 +1,50 @@
+# Janus Gateway main config for cloud deploy.
+# Mounted at /usr/local/etc/janus/janus.jcfg in container.
+#
+# Operator MUST edit nat_1_1_mapping below before bringing up the stack.
+
+general: {
+    configs_folder = "/usr/local/etc/janus"
+    plugins_folder = "/usr/local/lib/janus/plugins"
+    transports_folder = "/usr/local/lib/janus/transports"
+    debug_level = 4
+    session_timeout = 90
+    reclaim_session_timeout = 30
+    admin_secret = "REPLACE_WITH_JANUS_ADMIN_SECRET"
+}
+
+nat: {
+    # CRITICAL: replace with the PUBLIC IP of this node, else ICE candidates
+    # advertise a private IP and remote browsers cannot reach the SFU.
+    nat_1_1_mapping = "REPLACE_WITH_PUBLIC_IP"
+
+    stun_server = "stun.l.google.com"
+    stun_port = 19302
+
+    # TURN server (typically coturn on the same host)
+    # turn_rest_api = "http://localhost:9991/turn_rest"
+    # Or static creds:
+    turn_server = "REPLACE_WITH_TURN_PUBLIC_HOST"
+    turn_port = 3478
+    turn_type = "udp"
+
+    full_trickle = true
+    ignore_mdns = true
+    ice_tcp = false
+}
+
+media: {
+    rtp_port_range = "20000-40000"
+    ipv6 = false
+    max_nack_queue = 500
+    no_media_timer = 1
+    slowlink_threshold = 4
+}
+
+events: {
+    broadcast = false
+}
+
+certificates: {
+    # Janus internal DTLS certs auto-generated, no action needed for cloud deploy.
+}

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: janus-camera-stack
+  labels:
+    name: janus-camera-stack
+    purpose: webrtc-streaming

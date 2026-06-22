@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+secrets.yml
+*.env
+!*.env.example
+!*-example*.env
+_archive/
+.claude/
+*.bak-preview
+.pytest_cache/
+.hypothesis/

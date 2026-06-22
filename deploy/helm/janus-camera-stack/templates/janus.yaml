@@ -1,0 +1,88 @@
+{{- if .Values.janus.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: janus-config
+  namespace: {{ .Values.namespace }}
+data:
+  janus.jcfg: |
+    general: {
+        configs_folder = "/usr/local/etc/janus"
+        debug_level = 4
+    }
+    nat: {
+        {{- if .Values.janus.publicIp }}
+        nat_1_1_mapping = {{ .Values.janus.publicIp | quote }}
+        {{- end }}
+        stun_server = "stun.l.google.com"
+        stun_port = 19302
+        ice_lite = false
+    }
+    media: {
+        rtp_port_range = "20000-40000"
+    }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: janus
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "stack.labels" . | nindent 4 }}
+spec:
+  serviceName: janus
+  replicas: 1
+  selector:
+    matchLabels:
+      app: janus
+  template:
+    metadata:
+      labels:
+        app: janus
+        {{- include "stack.labels" . | nindent 8 }}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- with .Values.janus.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: janus
+          image: "{{ .Values.janus.image.repository }}:{{ .Values.janus.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8088
+            - containerPort: 8188
+            - containerPort: 7088
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/etc/janus
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              host: 127.0.0.1
+              path: /janus/info
+              port: 8088
+            periodSeconds: 30
+          resources: {{- toYaml .Values.janus.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: janus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: janus
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: janus
+  ports:
+    - name: http
+      port: 8088
+    - name: ws
+      port: 8188
+    - name: admin
+      port: 7088
+{{- end }}

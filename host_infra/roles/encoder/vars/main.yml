@@ -1,0 +1,19 @@
+---
+# L2 encoder vars
+
+# Default encoder profile (применяется только при initial install
+# /etc/robot/cam-rgb.env — runtime изменения через camera_bringup env_store
+# или прямую правку файла НЕ перетираются Ansible'ом).
+encoder_initial_profile:
+  WIDTH: 640
+  HEIGHT: 480
+  FPS: 15
+  BITRATE_KBPS: 900
+  GOP: 15
+  PORT: 5004
+  PRESET: veryfast
+  TUNE: zerolatency
+  SNAPSHOT_FPS: 1
+
+# Instance name (matches /dev/cam-rgb symlink, see camera_bringup InstanceSpec)
+encoder_instance: cam-rgb

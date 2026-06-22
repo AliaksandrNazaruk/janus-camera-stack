@@ -1,0 +1,23 @@
+# Declarative camera-fleet desired state (config-as-code).
+#
+# Copy to /etc/robot/camera-fleet.toml on the .10 gateway. The gateway converges
+# actual state toward this manifest:
+#   GET  /api/v1/admin/fleet/plan       — read-only drift (what's missing / extra)
+#   POST /api/v1/admin/fleet/reconcile  — register missing nodes (creds-free, additive)
+#
+# This file is NON-SECRET (hosts + sensor names only) and is safe to keep in git.
+# Provision + activate SSH to the node and need a sudo password + an out-of-band
+# confirmed host key (P4-SEC), so they stay operator-driven — `fleet/plan` tells you
+# exactly which nodes still need `POST /nodes/{id}/provision` and which `streams`.
+# Pruning (removing nodes/streams not listed here) is REPORTED by the plan but never
+# applied automatically. Design: janus_camera_page/docs/design/DECLARATIVE_FLEET.md
+
+[[node]]
+host = "192.168.1.55"
+display_name = "front"
+streams = ["color", "depth", "ir1"]   # subset of: color, depth, ir1, ir2
+
+# [[node]]
+# host = "192.168.1.56"
+# display_name = "rear"
+# streams = ["depth", "ir1"]

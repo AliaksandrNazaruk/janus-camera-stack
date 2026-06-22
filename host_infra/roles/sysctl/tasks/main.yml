@@ -1,0 +1,46 @@
+---
+# Kernel sysctl knobs для camera gateway.
+# Persisted в /etc/sysctl.d/99-camera-gateway.conf — переживает reboot.
+
+- name: Enable IPv4 forwarding (required для MASQUERADE)
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "{{ sysctl_ip_forward }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-camera-gateway.conf
+    reload: yes
+
+- name: Disable rp_filter (loose mode) — MASQUERADE требует source verification off
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "{{ sysctl_rp_filter_all }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-camera-gateway.conf
+    reload: yes
+  loop:
+    - net.ipv4.conf.all.rp_filter
+    - "net.ipv4.conf.{{ camera_lan_bridge }}.rp_filter"
+
+# ── conntrack для WebRTC ────────────────────────────────────────────
+# DEFAULT timeout=30s рвёт WebRTC media streams. Bump до 180s.
+# Из research §13: "Не покрыто никакой compliance метрикой, но важнее"
+- name: Load nf_conntrack module (required для UDP timeout sysctl)
+  community.general.modprobe:
+    name: nf_conntrack
+    state: present
+
+- name: Set conntrack UDP stream timeout = {{ conntrack_udp_timeout_stream }}s
+  ansible.posix.sysctl:
+    name: net.netfilter.nf_conntrack_udp_timeout_stream
+    value: "{{ conntrack_udp_timeout_stream }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-camera-gateway.conf
+    reload: yes
+
+- name: Set conntrack UDP unreplied timeout = {{ conntrack_udp_timeout_unreplied }}s
+  ansible.posix.sysctl:
+    name: net.netfilter.nf_conntrack_udp_timeout
+    value: "{{ conntrack_udp_timeout_unreplied }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-camera-gateway.conf
+    reload: yes

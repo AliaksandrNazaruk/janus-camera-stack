@@ -1,0 +1,12 @@
+# Test / dev dependencies — NOT required at runtime.
+#   pip install -r requirements-dev.txt
+# (Reviewer hit "pytest tests" failing on a missing respx — these were previously
+#  undeclared, installed ad-hoc. Pinned to the versions the suite is green on.)
+-r requirements.txt
+
+pytest==8.4.2
+pytest-asyncio==0.25.3        # async route/integration tests (pytestmark = asyncio)
+pytest-timeout==2.3.1         # bounds hardware/integration tests
+pytest-mock==3.14.0
+pytest-cov==6.1.1
+respx==0.22.0                 # httpx mocking — tests/test_system_routes.py, test_depth_proxy_routes.py

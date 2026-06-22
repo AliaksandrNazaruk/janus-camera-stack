@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Console</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/camera_config.css?v=3">
+  <link rel="stylesheet" href="/static/css/console.css?v=1">
+  <style nonce="{{ style_nonce }}">
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 800px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .topbar-nav { font-size: 12px; }
+    }
+    .file-row { padding: 6px 0; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+    .file-row:hover { background: #f1f5f9; }
+    .file-row.active { background: #dbeafe; font-weight: 600; }
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 800px) { .chart-grid { grid-template-columns: 1fr; } }
+    .chart { padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="topbar-brand">📷 Camera Console</span>
+    <nav class="topbar-nav" id="topNav">
+      <a class="nav-link" data-route="/overview" href="#/overview">Overview</a>
+      <a class="nav-link" data-route="/streams" href="#/streams">Streams</a>
+      <a class="nav-link" data-route="/mountpoints" href="#/mountpoints">Mountpoints</a>
+      <a class="nav-link" data-route="/fdir" href="#/fdir">FDIR</a>
+      <a class="nav-link" data-route="/encoders" href="#/encoders">Encoders</a>
+      <a class="nav-link" data-route="/hardware" href="#/hardware">Hardware</a>
+      <a class="nav-link" data-route="/audit" href="#/audit">Audit</a>
+      <a class="nav-link" data-route="/admin" href="#/admin">Admin</a>
+      <a class="nav-link" data-route="/settings" href="#/settings">Settings</a>
+      <a class="nav-link" data-route="/soak" href="#/soak">Soak</a>
+      <a class="nav-link" href="/cameras/dashboard.html" style="margin-left:auto;color:#1e40af;">📷 Devices ↗</a>
+      <a class="nav-link" href="/multiview.html" style="color:#1e40af;">📺 Multiview ↗</a>
+    </nav>
+    <span class="topbar-status" id="status">Idle</span>
+  </div>
+
+  <section class="view-section" id="view-overview">
+    <div class="panel">
+      <h2>Stack health</h2>
+      <div class="stats-row">
+        <div class="stat"><strong id="stHealth">—</strong><span>L4 health</span></div>
+        <div class="stat"><strong id="stMode">—</strong><span>system mode</span></div>
+        <div class="stat"><strong id="stFdir">—</strong><span>FDIR level</span></div>
+        <div class="stat"><strong id="stStreams">—</strong><span>active streams</span></div>
+      </div>
+      <div class="stats-row">
+        <div class="metric-widget"><div class="metric-label">video age</div><div class="metric-value" id="ovVideoAge">—</div><svg id="ovVideoAgeChart" viewBox="0 0 200 40" preserveAspectRatio="none" style="width:100%;height:30px;"></svg></div>
+        <div class="metric-widget"><div class="metric-label">output FPS</div><div class="metric-value" id="ovFps">—</div><svg id="ovFpsChart" viewBox="0 0 200 40" preserveAspectRatio="none" style="width:100%;height:30px;"></svg></div>
+        <div class="metric-widget"><div class="metric-label">client jitter</div><div class="metric-value" id="ovJitter">—</div><svg id="ovJitterChart" viewBox="0 0 200 40" preserveAspectRatio="none" style="width:100%;height:30px;"></svg></div>
+        <div class="metric-widget"><div class="metric-label">client RTT</div><div class="metric-value" id="ovRtt">—</div><svg id="ovRttChart" viewBox="0 0 200 40" preserveAspectRatio="none" style="width:100%;height:30px;"></svg></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Recent FDIR events</h2>
+      <div id="ovEvents"><p class="muted">Loading…</p></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-streams">
+    <div class="panel">
+      <h2>Streams — desired ↔ runtime</h2>
+      <div id="vwStreamsList"><p class="muted">Loading…</p></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-mountpoints">
+    <div class="panel">
+      <h2>Janus mountpoints
+        <button id="mpAddToggle" style="float:right;font-size:12px;">+ Create</button>
+      </h2>
+      <div id="vwMpList"><p class="muted">Loading…</p></div>
+    </div>
+    <div class="panel" id="mpAddPanel" style="display:none;">
+      <h3>Create mountpoint</h3>
+      <p class="muted" style="font-size:12px;">Manual provisioning (e.g. a generic V4L2 webcam). RealSense sensors are auto-allocated — use Devices for those.</p>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px;max-width:560px;">
+        <label>ID</label><input type="number" id="mpId" min="1000" max="65535" placeholder="5001" style="width:120px;">
+        <label>Description</label><input type="text" id="mpDesc" placeholder="Webcam #1" maxlength="200">
+        <label>RTP port</label><input type="number" id="mpPort" min="1024" max="65535" placeholder="5010" style="width:120px;">
+        <label>Codec</label><select id="mpCodec"><option>h264</option><option>h265</option><option>vp8</option><option>vp9</option></select>
+        <label>Private</label><span><input type="checkbox" id="mpPrivate"></span>
+        <label>+ Encoder</label><span><input type="checkbox" id="mpStartEncoder"> provision encoder (writes env + starts unit)</span>
+      </div>
+      <div id="mpEncFields" style="display:none;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px;max-width:560px;margin-top:8px;">
+        <label>Family</label><select id="encFamily"><option>rtp-v4l2</option><option>rs-stream</option></select>
+        <label>Instance</label><input type="text" id="encInstance" placeholder="webcam-0" style="width:180px;">
+        <label>Device</label><input type="text" id="encDevice" placeholder="/dev/video0 OR rtsp://…">
+        <label>W × H @ FPS</label><span><input type="number" id="encWidth" value="640" style="width:70px;"> × <input type="number" id="encHeight" value="480" style="width:70px;"> @ <input type="number" id="encFps" value="30" style="width:54px;"></span>
+        <label>Bitrate kbps</label><input type="number" id="encBitrate" value="1500" style="width:110px;">
+        <label>Pix fmt</label><input type="text" id="encPixFmt" placeholder="(auto)" style="width:120px;">
+      </div>
+      <div style="margin-top:10px;">
+        <button id="mpCreateBtn">Create</button>
+        <button id="mpCancelBtn">Cancel</button>
+        <span id="mpStatus" class="muted" style="margin-left:10px;font-size:12px;"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-fdir">
+    <div class="panel">
+      <h2>FDIR — autonomy
+        <button type="button" id="vwFdirResetBtn" class="danger" style="float:right;padding:4px 10px;font-size:11px;">↻ Reset ladder</button>
+      </h2>
+      <div id="vwFdirSummary"><p class="muted">Loading…</p></div>
+      <div id="vwFdirEvents" style="margin-top:12px;max-height:300px;overflow-y:auto;"></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-encoders">
+    <div class="panel">
+      <h2>Encoder instances</h2>
+      <div id="vwEncodersList"><p class="muted">Loading…</p></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-hardware">
+    <div class="panel">
+      <h2>Hardware
+        <button type="button" id="vwHwProbeBtn" style="float:right;">↻ Probe</button>
+      </h2>
+      <div id="vwHwList"><p class="muted">Click Probe to enumerate V4L2 + RealSense</p></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-audit">
+    <div class="panel">
+      <h2>Audit log</h2>
+      <div style="margin-bottom:8px;">
+        <input type="text" id="auditFilterAction" placeholder="action filter…" style="width:160px;font-size:12px;">
+        <input type="text" id="auditFilterTarget" placeholder="target filter…" style="width:160px;font-size:12px;">
+        <button type="button" id="auditFilterApply" style="font-size:12px;">Apply</button>
+        <button type="button" id="auditFilterClear" style="font-size:12px;">Clear</button>
+      </div>
+      <div id="vwAuditList"><p class="muted">Loading…</p></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-admin">
+    <div class="panel">
+      <h2>Admin config
+        <span class="muted" style="font-size:11px;">— rotate secrets, NAT mapping</span>
+      </h2>
+      <p class="muted" style="font-size:13px;">
+        Full editor: <a href="/admin_config.html">/admin_config.html</a>.
+        Add/manage camera hosts: <a href="/camera_hosts.html">/camera_hosts.html</a>.
+      </p>
+      <div id="vwAdminSummary"><p class="muted">Loading…</p></div>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-settings">
+    <div class="panel">
+      <h2>Runtime config — WebRTC / Network
+        <span class="muted" style="font-size:11px;">— live-apply (NEW_SESSIONS_ONLY)</span>
+      </h2>
+      <p class="muted" style="font-size:13px;">
+        Two-step, confirm-bound: <b>Validate</b> a change → <b>Apply</b> the validated revision.
+        Only <code>ice_policy</code> and <code>turn_credential_ttl_seconds</code> apply live; other
+        impact classes (encoder tuning, etc.) are blocked. Effective state shows in Overview / Streams.
+      </p>
+      <div id="setCaps" class="muted" style="font-size:12px;margin-bottom:8px;">—</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="text-align:left;border-bottom:1px solid #cbd5e1;">
+          <th style="padding:4px;">Field</th><th style="padding:4px;">Current (effective)</th><th style="padding:4px;">New value</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:4px;font-family:monospace;">ice_policy</td>
+            <td style="padding:4px;font-family:monospace;" id="setCurIce">—</td>
+            <td style="padding:4px;">
+              <select id="setIce">
+                <option value="">(unchanged)</option>
+                <option value="all">all</option>
+                <option value="relay">relay</option>
+              </select>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:4px;font-family:monospace;">turn_credential_ttl_seconds</td>
+            <td style="padding:4px;font-family:monospace;" id="setCurTtl">—</td>
+            <td style="padding:4px;">
+              <input id="setTtl" type="number" min="300" max="3600" step="1"
+                     placeholder="(unchanged) 300–3600" style="width:180px;">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;">
+        <button id="setValidateBtn">Validate</button>
+        <button id="setApplyBtn" disabled>Apply</button>
+        <button id="setRefreshBtn">Refresh</button>
+      </div>
+      <pre id="setResult" style="margin-top:10px;background:#f1f5f9;padding:8px;border-radius:4px;font-size:12px;white-space:pre-wrap;max-height:320px;overflow:auto;">—</pre>
+    </div>
+  </section>
+
+  <section class="view-section" id="view-soak">
+    <div class="panel">
+      <h2>Soak runs</h2>
+      <div id="vwSoakFiles"><p class="muted">Loading…</p></div>
+    </div>
+    <div id="vwSoakSelected" style="display:none;">
+      <div class="panel">
+        <h2 id="vwSoakRunTitle">—</h2>
+        <div id="vwSoakRunMeta" style="font-size:12px;color:#64748b;font-family:monospace;"></div>
+      </div>
+      <div class="panel">
+        <h2>Time series</h2>
+        <div class="chart-grid" id="vwSoakCharts"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="vwInspectModal" class="modal-overlay">
+    <div class="modal-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 id="vwInspectTitle" style="margin:0;font-family:monospace;">—</h3>
+        <button type="button" id="vwInspectClose">Close ×</button>
+      </div>
+      <div id="vwInspectBody"><p class="muted">Loading…</p></div>
+    </div>
+  </div>
+
+  <script src="/static/js/console_lib.js?v=sx4a" nonce="{{ script_nonce }}"></script>
+  <script src="/static/js/console_app.js?v=sx4c" nonce="{{ script_nonce }}"></script>
+</body>
+</html>

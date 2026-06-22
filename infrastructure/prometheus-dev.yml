@@ -1,0 +1,21 @@
+# Dev Prometheus config — scrapes camera-page metrics endpoint.
+# Assumes camera-page service running on host:8900.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'camera-page'
+    static_configs:
+      - targets: ['host.docker.internal:8900']
+    metrics_path: /metrics
+
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['camera-stack-gateway-dev:8201']
+    metrics_path: /metrics
+
+  - job_name: 'textroom-relay'
+    static_configs:
+      - targets: ['host.docker.internal:9000']
+    metrics_path: /metrics

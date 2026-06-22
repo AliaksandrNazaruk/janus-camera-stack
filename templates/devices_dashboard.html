@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Devices · WebRTC camera node</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/camera_config.css?v=3">
+</head>
+<body>
+  <h1>Devices on this node</h1>
+  <p style="margin:4px 0;font-size:13px;"><a href="/console.html">← Console</a> · <a href="/camera_hosts.html">Camera Hosts</a> · device inventory + per-sensor lifecycle</p>
+  <p class="subtitle">Per-(device, sensor) pipeline state. Initialize starts the encoder + Janus mountpoint; Stop safely tears down the pipe. Viewer/Config URLs appear only when the pipeline is running.</p>
+
+  <div id="status" class="info">Loading registry…</div>
+
+  <div id="devicesContainer"></div>
+
+  <h2>Diagnostics</h2>
+  <p class="links">
+    <a href="/cameras/registry.json" target="_blank">Registry JSON</a>
+    <a href="/sensors" target="_blank">RealSense catalog</a>
+    <a href="/camera_config.html">Legacy config URL</a>
+    <a href="#" id="resetTokenLink">Reset admin token</a>
+  </p>
+
+  <script src="/static/js/console_lib.js?v=1"></script>
+  <script src="/static/js/devices_dashboard.js?v=6"></script>
+</body>
+</html>

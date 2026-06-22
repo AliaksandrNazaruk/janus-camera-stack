@@ -1,0 +1,66 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Core — Status, Buttons, Metrics" subtitle="StatusBadge · ActionButton · MetricStat" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-body); }
+  .wrap { padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .block { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 14px 16px; }
+  .lbl { font: var(--weight-semibold) var(--text-xs)/1 var(--font-sans); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-muted); margin-bottom: 11px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @keyframes gc-pulse { 0% { box-shadow: 0 0 0 0 currentColor; opacity: 1; } 70% { box-shadow: 0 0 0 6px transparent; opacity: 0.7; } 100% { box-shadow: 0 0 0 0 transparent; opacity: 1; } }
+  @keyframes gc-spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div id="root" class="wrap"></div>
+  <script type="text/babel">
+    const { StatusBadge, ActionButton, MetricStat } = window.GatewayConsoleDesignSystem_64aa70;
+    function Demo() {
+      return (
+        <>
+          <div className="metrics">
+            <MetricStat label="Nodes Online" value={2} total={2} family="ok" icon="server" />
+            <MetricStat label="Streams Live" value={3} total={4} family="warn" icon="video" hint="cam55/depth waiting" />
+            <MetricStat label="FDIR Events" value={1} family="busy" icon="activity" hint="last hour" />
+            <MetricStat label="Open Alerts" value={1} family="warn" icon="bell" hint="1 warning" />
+          </div>
+          <div className="block">
+            <div className="lbl">StatusBadge — auto-mapped families</div>
+            <div className="row">
+              <StatusBadge state="online" />
+              <StatusBadge state="waiting_for_rtp" />
+              <StatusBadge state="stale" />
+              <StatusBadge state="offline" />
+              <StatusBadge state="provisioning" pulse />
+              <StatusBadge state="synced" size="lg" />
+              <StatusBadge state="degraded" size="sm" />
+            </div>
+          </div>
+          <div className="block">
+            <div className="lbl">ActionButton — risk-classed variants</div>
+            <div className="row">
+              <ActionButton variant="primary" icon="play">Open viewer</ActionButton>
+              <ActionButton variant="default" icon="rotate-cw">Restart</ActionButton>
+              <ActionButton variant="ghost" icon="refresh-cw" size="sm">Refresh</ActionButton>
+              <ActionButton variant="warning" icon="square">Stop stream</ActionButton>
+              <ActionButton variant="danger" icon="trash-2">Remove node</ActionButton>
+              <ActionButton variant="default" busy>Applying…</ActionButton>
+            </div>
+          </div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    setTimeout(() => window.lucide && window.lucide.createIcons(), 60);
+  </script>
+</body>
+</html>

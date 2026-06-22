@@ -1,0 +1,104 @@
+# Prometheus scraping camera-page /metrics endpoint.
+# For production observability, prefer kube-prometheus-stack Helm chart instead.
+# This is a minimal standalone Prometheus for self-contained k8s deploy.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: janus-camera-stack
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: camera-page
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [janus-camera-stack]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: camera-page
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            regex: "8900"
+            action: keep
+        metrics_path: /metrics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: janus-camera-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.51.0
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=7d"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: janus-camera-stack
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-camera-stack
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-camera-stack
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-camera-stack
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: janus-camera-stack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: janus-camera-stack
+spec:
+  type: ClusterIP
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090

@@ -1,0 +1,20 @@
+# Streaming plugin — static mountpoints for baseline tests.
+# Dynamic mountpoints are created by camera-page L4 at runtime.
+general: {
+    admin_key = "REPLACE_WITH_ADMIN_KEY"
+}
+
+# Example static mountpoint (rtp testsrc). Useful for smoke testing the
+# stack without real cameras — comment out in production.
+#
+# testsrc-rgb: {
+#     type = "rtp"
+#     id = 1305
+#     description = "Static test pattern (rtp from ffmpeg testsrc)"
+#     audio = false
+#     video = true
+#     videoport = 5004
+#     videopt = 96
+#     videortpmap = "H264/90000"
+#     videofmtp = "profile-level-id=42e01f;packetization-mode=1"
+# }

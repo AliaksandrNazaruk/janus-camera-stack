@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" viewport="900x200" name="Feedback — Alert Bar" subtitle="Global severity strip: critical · warning · info" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); }
+  .wrap { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .frame { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+</style>
+</head>
+<body>
+  <div id="root" class="wrap"></div>
+  <script type="text/babel">
+    const { AlertBar } = window.GatewayConsoleDesignSystem_64aa70;
+    function Demo() {
+      return (
+        <>
+          <div className="frame"><AlertBar severity="critical" count={2} message="Janus admin (8088) exposed on public interface" actionLabel="Open Network" /></div>
+          <div className="frame"><AlertBar severity="warning" count={1} message="cam55/depth waiting_for_rtp — no packets received" actionLabel="Open diagnostics" /></div>
+          <div className="frame"><AlertBar severity="info" message="Firewall reconcile applied · 14:15" actionLabel="View" onDismiss={() => {}} /></div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    setTimeout(() => window.lucide && window.lucide.createIcons(), 60);
+  </script>
+</body>
+</html>

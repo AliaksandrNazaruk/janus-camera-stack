@@ -1,0 +1,123 @@
+---
+# L2 encoder role. Owns the admin-CLI boundary (encoder-admin / camera-admin)
+# и the boot reconciler (sensor-reconcile.service).
+#
+# Phase 2: the V4L2 color path (rtp-rgb@cam-rgb.service + rtp-rgb.sh +
+# cam-wait-capture.sh + cam-rgb.{tuning,contract}.env + dropins) was RETIRED.
+# Color now streams через the pyrealsense2 mux like depth/IR:
+#   realsense-mux.service → /run/realsense/color.fifo → rs-stream@color.service.
+# The mux producer + rs-stream@ consumer units/scripts are deployed by
+# janus_camera_page/install.sh. Per-sensor env (rs-{color,depth,ir1,ir2}.
+# {tuning,contract}.env) is L4-managed (sensor_lifecycle writes it on Initialize).
+#
+# Does NOT own:
+#   /dev/cam-rgb symlink (L0 camera_bringup владеет — V4L2 node для /modes enum)
+#   janus.service (L3 owner)
+
+# ── encoder-admin CLI (L2 boundary для L4 + other callers) ──────────
+# Same pattern as janus-admin (L3): explicit binary contract вместо того
+# чтобы L4 shell-out с known systemctl unit names. L4 calls:
+#   sudo encoder-admin restart --family rs-stream --instance color  — restart color
+#   sudo encoder-admin status  --family rs-stream --instance <s>    — JSON state
+#
+# Sudoers entry scoped к этому binary (не full systemctl access).
+# Same security model как janus-admin.
+
+- name: Install encoder-admin CLI (L2 boundary для L4)
+  ansible.builtin.copy:
+    src: encoder-admin.py
+    dest: /usr/local/bin/encoder-admin
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install sudoers entry для boris → encoder-admin (NOPASSWD, scoped)
+  ansible.builtin.copy:
+    content: |
+      # Allow boris user (L4 service runs as) to invoke encoder-admin без password.
+      # Scoped к specific binary. Owns rs-stream@* / realsense-mux lifecycle.
+      boris ALL=(root) NOPASSWD: /usr/local/bin/encoder-admin
+    dest: /etc/sudoers.d/encoder-admin
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# ── camera-admin CLI (L0 boundary — closes v4l2-ctl + realsense-failsafe leaks) ──
+# Same pattern как janus-admin (L3) + encoder-admin (L2). L4 был calling
+# v4l2-ctl + sudo systemctl start realsense-failsafe.service directly.
+# Now: explicit L0 contract через scoped binary.
+#
+# camera-admin {status, v4l2-formats, v4l2-info, v4l2-ctrls, v4l2-set-ctrl, reset-usb}
+#
+# Lives в encoder role because L2 encoder is primary consumer of /dev/cam-rgb,
+# и host_infra не имеет dedicated L0 role yet (camera_bringup is Python package,
+# not Ansible-managed).
+
+- name: Install camera-admin CLI (L0 boundary для L4)
+  ansible.builtin.copy:
+    src: camera-admin.py
+    dest: /usr/local/bin/camera-admin
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install sudoers entry для boris → camera-admin (NOPASSWD, scoped)
+  ansible.builtin.copy:
+    content: |
+      # Allow boris user (L4 service runs as) to invoke camera-admin без password.
+      # Scoped к specific binary. Owns v4l2 + realsense-failsafe operations.
+      boris ALL=(root) NOPASSWD: /usr/local/bin/camera-admin
+    dest: /etc/sudoers.d/camera-admin
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# ── Sprint X4: dashboard-driven stream lifecycle ───────────────────
+# Replaces per-stream systemd `enable` flags as autostart mechanism.
+# Single source of truth = sensor_allocations.json (desired_active flag).
+# Boot reconciler reads it и starts only marked streams.
+#
+# Migration semantics:
+#   • Existing prod has 3 dynamic allocations (depth/ir1/ir2) без the
+#     desired_active field — backward-compat in allocator loads them
+#     с desired_active=False (safe — operator must explicitly toggle ON).
+#   • Color is special-cased: reconciler seeds it on empty state. On
+#     existing prod (state non-empty) the seed step is no-op, so operator
+#     must explicitly enable color via dashboard the first time.
+#   • Per-stream units (rs-stream@, realsense-mux) become `disabled` — they
+#     start ONLY via reconciler или dashboard call.
+
+- name: Install sensor-reconcile.service (boot-time stream reconciler)
+  ansible.builtin.copy:
+    src: sensor-reconcile.service
+    dest: /etc/systemd/system/sensor-reconcile.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - systemd daemon-reload
+
+- name: Enable sensor-reconcile.service (replaces per-stream enable flags)
+  ansible.builtin.systemd:
+    name: sensor-reconcile.service
+    enabled: yes
+    daemon_reload: yes
+  # Не started=yes — initial run happens at next boot. Operator может
+  # trigger manually via `sudo systemctl start sensor-reconcile` after
+  # editing desired-state JSON, без waiting reboot.
+
+- name: Disable systemd autostart for stream units (now reconciler-driven)
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: no
+  loop:
+    - "rs-stream@color.service"
+    - "rs-stream@depth.service"
+    - "rs-stream@ir1.service"
+    - "rs-stream@ir2.service"
+    - "realsense-mux.service"
+  # Не stopping — preserves currently running streams across deploy. They
+  # stay active until either operator stops them OR reboot kicks reconciler.
+  failed_when: false  # tolerate units missing on fresh hosts

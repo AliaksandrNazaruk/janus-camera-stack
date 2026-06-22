@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multi-stream viewer</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/console.css?v=1">
+  <style nonce="{{ style_nonce }}">
+    body { padding: 0; background: #0f172a; color: #e2e8f0; height: 100vh; display: flex; flex-direction: column; }
+    .mv-topbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0; }
+    .mv-brand { font-weight: 700; color: #60a5fa; font-size: 14px; }
+    .mv-spacer { flex: 1; }
+    .mv-select { background: #334155; color: #e2e8f0; border: 1px solid #475569; padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+    .mv-btn { background: #2563eb; color: white; border: none; padding: 4px 10px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+    .mv-btn.muted { background: #475569; }
+    .mv-grid { flex: 1; display: grid; gap: 2px; padding: 2px; min-height: 0; }
+    .mv-grid.layout-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .mv-grid.layout-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+    .mv-grid.layout-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .mv-grid.layout-3 .mv-cell:first-child { grid-column: 1 / span 2; }
+    .mv-grid.layout-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .mv-cell { background: #020617; border: 1px solid #334155; position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+    .mv-cell-header { position: absolute; top: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); padding: 2px 6px; font-size: 11px; color: #e2e8f0; border-radius: 3px; z-index: 2; display: flex; align-items: center; gap: 6px; }
+    .mv-cell-header select { background: #1e293b; color: #e2e8f0; border: 1px solid #475569; font-size: 11px; padding: 1px 4px; }
+    .mv-cell-header .mv-cell-fullscreen { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 13px; padding: 0 4px; }
+    .mv-cell iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .mv-cell.empty { display: flex; align-items: center; justify-content: center; color: #475569; font-size: 13px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="mv-topbar">
+    <a href="/console.html" class="mv-brand" style="text-decoration:none;">◀ 📷 Multiview</a>
+    <span class="mv-spacer"></span>
+    <span style="font-size:12px;color:#94a3b8;">Layout:</span>
+    <button class="mv-btn muted" data-layout="1">1</button>
+    <button class="mv-btn muted" data-layout="2">2</button>
+    <button class="mv-btn muted" data-layout="3">3</button>
+    <button class="mv-btn" data-layout="4">4 (active)</button>
+  </div>
+
+  <div class="mv-grid layout-4" id="mvGrid"></div>
+
+  <script src="/static/js/console_lib.js?v=1" nonce="{{ script_nonce }}"></script>
+  <script nonce="{{ script_nonce }}">
+(function () {
+  'use strict';
+  const CL = window.ConsoleLib;
+  const $ = CL.$;
+  const grid = $('mvGrid');
+
+  const STORAGE_KEY = 'multiview_state_v1';
+  function loadState() {
+    try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function saveState(state) {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch {}
+  }
+
+  let mountpoints = [];
+  let state = Object.assign({ layout: 4, cells: [null, null, null, null] }, loadState());
+  state.cells = state.cells || [null, null, null, null];
+  while (state.cells.length < 4) state.cells.push(null);
+
+  async function loadMountpoints() {
+    // Use unauthenticated Janus list (proxy to admin streaming.list — no creds needed)
+    try {
+      const r = await fetch('/api/v1/admin/mountpoints', {
+        credentials: 'include',
+        headers: { 'X-Admin-Token': sessionStorage.getItem('camera_admin_token') || '' },
+      });
+      if (!r.ok) {
+        // Try with auth retry
+        const r2 = await CL.authFetch('/api/v1/admin/mountpoints');
+        if (!r2.ok) { mountpoints = []; return; }
+        const j = await r2.json();
+        mountpoints = j.mountpoints || [];
+      } else {
+        const j = await r.json();
+        mountpoints = j.mountpoints || [];
+      }
+    } catch (e) {
+      mountpoints = [];
+    }
+  }
+
+  function renderCells() {
+    grid.className = 'mv-grid layout-' + state.layout;
+    grid.innerHTML = '';
+    for (let i = 0; i < state.layout; i++) {
+      const mpId = state.cells[i];
+      const cell = document.createElement('div');
+      cell.className = 'mv-cell' + (mpId ? '' : ' empty');
+      cell.dataset.idx = i;
+      // Header with selector
+      const header = document.createElement('div');
+      header.className = 'mv-cell-header';
+      const sel = document.createElement('select');
+      sel.innerHTML = '<option value="">— pick mountpoint —</option>' +
+        mountpoints.map((m) => `<option value="${m.id}" ${m.id == mpId ? 'selected' : ''}>#${m.id} ${m.description || ''}</option>`).join('');
+      sel.addEventListener('change', () => {
+        state.cells[i] = sel.value ? parseInt(sel.value, 10) : null;
+        saveState(state);
+        renderCells();
+      });
+      header.appendChild(sel);
+      const fs = document.createElement('button');
+      fs.className = 'mv-cell-fullscreen';
+      fs.textContent = '⛶';
+      fs.title = 'Fullscreen this cell';
+      fs.addEventListener('click', () => {
+        if (cell.requestFullscreen) cell.requestFullscreen();
+      });
+      header.appendChild(fs);
+      cell.appendChild(header);
+      // Iframe for viewer
+      if (mpId) {
+        const iframe = document.createElement('iframe');
+        iframe.src = '/preview/' + mpId;
+        iframe.title = 'mp #' + mpId;
+        cell.appendChild(iframe);
+      } else {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;color:#475569;';
+        empty.textContent = 'Empty — pick a mountpoint';
+        cell.appendChild(empty);
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  document.querySelectorAll('[data-layout]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.layout = parseInt(btn.dataset.layout, 10);
+      saveState(state);
+      // Update buttons
+      document.querySelectorAll('[data-layout]').forEach((b) => {
+        b.classList.toggle('muted', b !== btn);
+        b.textContent = b.dataset.layout + (b === btn ? ' (active)' : '');
+      });
+      renderCells();
+    });
+  });
+
+  // Initial — restore active button + fetch + render
+  document.querySelector(`[data-layout="${state.layout}"]`).classList.remove('muted');
+  document.querySelector(`[data-layout="${state.layout}"]`).textContent = state.layout + ' (active)';
+  loadMountpoints().then(renderCells);
+})();
+  </script>
+</body>
+</html>

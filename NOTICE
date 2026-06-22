@@ -1,0 +1,24 @@
+janus-camera-page
+Copyright 2026 janus-camera-page contributors
+
+This product includes software developed by the janus-camera-page
+contributors.
+
+Third-party components shipped with or required by this software:
+
+- Janus Gateway (https://janus.conf.meetecho.com/) — GPL v3
+  Not vendored; configured as runtime dependency. See deploy/janus/.
+
+- coturn (https://github.com/coturn/coturn) — BSD-3-Clause
+  Not vendored; configured as runtime dependency.
+
+- FastAPI (https://fastapi.tiangolo.com/) — MIT
+- uvicorn (https://www.uvicorn.org/) — BSD-3-Clause
+- httpx, pydantic, jinja2, prometheus-client, websockets, starlette
+  Listed in requirements.txt; each retains its original license.
+
+- pyrealsense2 (Intel RealSense SDK) — Apache-2.0
+  Optional, used by realsense_mux.py on edge nodes with D435/D435i hardware.
+
+When redistributing janus-camera-page bundled with these dependencies,
+preserve their respective LICENSE / NOTICE files.

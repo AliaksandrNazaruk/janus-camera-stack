@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" viewport="900x520" name="Overlay — Operation Drawer & Confirm" subtitle="OperationDrawer (impact + step progress) · ConfirmDialog (typed-phrase)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-body); }
+  .stage { position: relative; height: 520px; overflow: hidden; }
+  .switch { position: absolute; top: 14px; left: 14px; z-index: 1; display: flex; gap: 6px; }
+  @keyframes gc-spin { to { transform: rotate(360deg); } }
+  @keyframes gc-slidein { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes gc-pop { from { transform: scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+  <div id="root" class="stage"></div>
+  <script type="text/babel">
+    const { OperationDrawer, ConfirmDialog, ActionButton } = window.GatewayConsoleDesignSystem_64aa70;
+    function Demo() {
+      const [view, setView] = React.useState("drawer");
+      React.useEffect(() => { setTimeout(() => window.lucide && window.lucide.createIcons(), 40); });
+      return (
+        <>
+          <div className="switch">
+            <ActionButton size="sm" variant={view === "drawer" ? "primary" : "default"} onClick={() => setView("drawer")}>Operation Drawer</ActionButton>
+            <ActionButton size="sm" variant={view === "confirm" ? "primary" : "default"} onClick={() => setView("confirm")}>Confirm Dialog</ActionButton>
+          </div>
+          <OperationDrawer open={view === "drawer"} title="Restart cam55/color" target="cam55:color"
+            impactClass="B" impact={["Stream reconnects (5–15s)", "Viewers may briefly drop", "FDIR keeps running"]}
+            fdirNote="stays enabled" duration="5–15s" running
+            steps={[
+              { label: "Request sent", state: "ok" },
+              { label: "Node acknowledged", state: "ok" },
+              { label: "RTP resumed", state: "active" },
+              { label: "Janus mountpoint online", state: "pending" },
+            ]}
+            onClose={() => setView("none")} />
+          <ConfirmDialog open={view === "confirm"} title="Remove node cam55" destructive confirmPhrase="cam55"
+            willRemove={["cam55:color binding + mp 2000", "cam55:depth binding + mp 2001", "firewall rules → 192.168.1.55"]}
+            willKeep={["Gateway cam10 + its streams", "Audit history"]}
+            rollback="Re-onboard via the Add Node wizard."
+            confirmLabel="Remove node" onClose={() => setView("none")} />
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+  </script>
+</body>
+</html>

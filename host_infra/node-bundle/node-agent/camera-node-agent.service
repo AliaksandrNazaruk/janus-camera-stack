@@ -1,0 +1,15 @@
+[Unit]
+Description=Camera node agent (gateway control plane: healthz / restart_stream / probe)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# token + bind come from here (optional in dev; required for prod — P3)
+EnvironmentFile=-/etc/robot/node-agent.env
+ExecStart=/usr/bin/python3 /usr/local/bin/camera-node-agent.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

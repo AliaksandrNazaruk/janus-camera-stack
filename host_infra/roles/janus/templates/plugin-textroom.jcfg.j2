@@ -1,0 +1,19 @@
+{# host_infra/roles/janus/templates/plugin-textroom.jcfg.j2
+   Janus textroom plugin — joystick datachannel + admin secret.
+   Secret loaded from host_infra/secrets.yml (NOT committed).
+#}
+general: {
+        #admin_key = "supersecret"
+        json = "indented"
+        events = true
+        #string_ids = true      # не включаем, мы будем использовать числовой ID 1000
+}
+
+room-1000: {
+        description = "AE.01 DataChannel"
+        is_private  = true
+        secret      = "{{ janus_textroom_secret }}"     # пароль для управления комнатой (destroy и т.п.)
+        # pin       = "roompwd"        # если хочешь пароль на вход — раскомментируй
+        history     = 0
+        post        = "http://127.0.0.1:9000/textroom-hook"
+}

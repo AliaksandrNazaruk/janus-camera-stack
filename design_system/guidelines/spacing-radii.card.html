@@ -1,0 +1,35 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Radii & Elevation" subtitle="Tight corners; shadows only for floating layers" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-body); }
+  .wrap { display: flex; gap: 28px; padding: 22px; align-items: flex-start; }
+  .group { display: flex; gap: 14px; }
+  .box { width: 60px; height: 60px; background: var(--surface-card); border: 1px solid var(--border-subtle); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; box-sizing: border-box; }
+  .cap { font: var(--weight-regular) var(--text-2xs) var(--font-mono); color: var(--text-muted); }
+  .sep { width: 1px; align-self: stretch; background: var(--border-subtle); }
+  .shadow { border: 0; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="group">
+      <div class="box" style="border-radius:var(--radius-xs)"><span class="cap">xs 3</span></div>
+      <div class="box" style="border-radius:var(--radius-sm)"><span class="cap">sm 4</span></div>
+      <div class="box" style="border-radius:var(--radius-md)"><span class="cap">md 6</span></div>
+      <div class="box" style="border-radius:var(--radius-lg)"><span class="cap">lg 8</span></div>
+      <div class="box" style="border-radius:var(--radius-xl)"><span class="cap">xl 12</span></div>
+    </div>
+    <div class="sep"></div>
+    <div class="group">
+      <div class="box shadow" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)"><span class="cap">sm</span></div>
+      <div class="box shadow" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-md)"><span class="cap">md</span></div>
+      <div class="box shadow" style="border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)"><span class="cap">lg</span></div>
+      <div class="box shadow" style="border-radius:var(--radius-xl);box-shadow:var(--shadow-overlay)"><span class="cap">overlay</span></div>
+    </div>
+  </div>
+</body>
+</html>

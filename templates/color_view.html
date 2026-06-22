@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <title>RealSense Viewer</title>
+  <link rel="stylesheet" href="{{ api_prefix }}/static/css/player.css?v=2">
+  {% if depth_features_script %}
+  {# Phase 2.3: aligned click-to-depth probe on color viewer — HUD/toast styles. #}
+  <link rel="stylesheet" href="{{ api_prefix }}/static/css/player-depth.css">
+  {% endif %}
+  {# P0-SEC-001: MUST load first — wraps fetch/EventSource/WebSocket so all
+     subsequent player JS auto-injects X-Viewer-Token header / ?token= query. #}
+  <script src="{{ api_prefix }}/viewer_auth_bootstrap.js"></script>
+  <script src="{{ api_prefix }}/player/clean_mode.js"></script>
+  <script src="{{ api_prefix }}/janus.js"></script>
+  {# Sprint B1 — generic stack: NO joystick/gamepad scripts loaded by default.
+     Robot wrappers (templates/robot_overlay/color_view.html) extend this and add them. #}
+  <script src="{{ api_prefix }}/static/js/vendor/webrtc-adapter-8.2.3.js?v=1"
+          integrity="sha384-M+1CvSefTCcyL3Ltxapd+H+xrPcE+qsWuFfm4UmxzWvMnL9OUXKl5Q/23MmynaLq"></script>
+  <!-- Clean-architecture player scripts (no bundler; namespace-based) -->
+  <script src="{{ api_prefix }}/player/ns.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/config.js?v=5"></script>
+
+  <script src="{{ api_prefix }}/player/core/player_state.js?v=3"></script>
+  <script src="{{ api_prefix }}/player/core/codes.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/domain_events.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/connection_policy.js?v=4"></script>
+  <script src="{{ api_prefix }}/player/core/state_machine_canonical.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/invariants.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/fail_closed.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/backoff.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/core/recovery_policy.js?v=3"></script>
+
+  <script src="{{ api_prefix }}/player/ports/clock_port.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/ports/logger_port.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/ports/streaming_port.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/ports/video_port.js?v=2"></script>
+
+  <script src="{{ api_prefix }}/player/adapters/clock.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/adapters/logger.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/adapters/janus_session_manager.js?v=3"></script>
+  <script src="{{ api_prefix }}/player/adapters/dom_ui_adapter.js?v=5"></script>
+  <script src="{{ api_prefix }}/player/adapters/janus_streaming_adapter.js?v=4"></script>
+  <script src="{{ api_prefix }}/player/adapters/janus_textroom_adapter.js?v=3"></script>
+  <script src="{{ api_prefix }}/player/adapters/back_channel.js?v=1"></script>
+
+  <script src="{{ api_prefix }}/player/app/stats_service.js?v=5"></script>
+  {# Sprint B1 — JoystickService loaded only by robot wrapper (templates/robot_overlay/) #}
+  <script src="{{ api_prefix }}/player/app/recovery_map.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/reconnect_coordinator.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/timer_coordinator.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/watchdog_service.js?v=2"></script>
+  <script src="{{ api_prefix }}/player/app/player_controller.js?v=5"></script>
+  <script src="{{ api_prefix }}/player/bootstrap.js?v=3"></script>
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body
+  data-style-nonce="{{ style_nonce }}"
+  data-prefer-stream-id="{{ stream_id }}"
+  data-stream-name="{{ stream_name }}"
+  data-api-prefix="{{ api_prefix }}"
+  data-autoplay="1"
+  data-debug-panel="0"
+  data-auto-restart="local"
+  {# Sprint B1 — generic stack: joystick mode default 'off'. Robot wrapper overrides to 'always'. #}
+  data-joystick-mode="{{ joystick_mode | default('off') }}"
+  data-no-frame-threshold-ms="{{ no_frame_threshold_ms | default(15000) }}"
+  data-track-mute-ms="{{ track_mute_ms | default(3000) }}"
+  data-watchdog-interval-ms="{{ watchdog_interval_ms | default(2000) }}"
+  data-connect-settle-ms="{{ connect_settle_ms | default(6000) }}"
+  data-min-acceptable-fps="{{ min_acceptable_fps | default(5) }}"
+  data-fps-drop-threshold-ms="{{ fps_drop_threshold_ms | default(3000) }}"
+  data-ice-disconnected-grace-ms="{{ ice_disconnected_grace_ms | default(3000) }}"
+  data-backoff-base-ms="{{ backoff_base_ms | default(300) }}"
+  data-backoff-min-ms="{{ backoff_min_ms | default(150) }}"
+  data-session-timeout-ms="{{ session_timeout_ms | default(60000) }}"
+  data-client-config-path="{{ api_prefix }}/client-config"
+{% if depth_features_script %}
+  {# Phase 2.3: aligned click-to-depth — display = color frame, click maps to
+     color pixel, mux sample_aligned (rs.align O(1)) returns its depth.
+     Rotation contract identical to depth_view: depth_features.js inverses
+     (ffmpeg ROTATION + CSS --video-rotation) before sending coords. #}
+  data-depth-endpoint="/depth"
+  data-depth-hud="#depthHud"
+  data-depth-toast="#depthToast"
+  data-depth-aligned="{{ 'true' if depth_probe_aligned else 'false' }}"
+  data-frame-rotation="{{ ffmpeg_rotation_deg | default(0) }}"
+  data-rotation-poll-url="{{ api_prefix }}/cameras/{{ device_serial }}/{{ sensor }}/rotation"
+{% endif %}
+>
+  <div id="statusPill" role="status" aria-live="polite"></div>
+  <pre id="debugPanel" aria-hidden="true"></pre>
+
+  <div class="controls" role="toolbar" aria-label="Player controls">
+    <button id="playBtn" type="button" aria-label="Play">Play</button>
+    <button id="statsBtn" type="button" aria-label="Toggle statistics">Show stats</button>
+  </div>
+
+  <pre id="statsBox" aria-label="Stream statistics"></pre>
+  <video id="video" autoplay playsinline muted></video>
+
+{% if depth_features_script %}
+  <div id="depthHud">x: ---, y: ---<br>depth: ---</div>
+  <div id="depthToast"></div>
+  <script src="{{ api_prefix }}/depth_features.js?v=17" defer></script>
+{% endif %}
+
+</body>
+</html>

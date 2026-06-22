@@ -1,0 +1,86 @@
+# Dev quickstart docker-compose for stack components that ARE containerizable.
+#
+# What this brings up:
+#   - api-gateway (Python FastAPI reverse proxy)
+#   - coturn (TURN server for NAT traversal testing)
+#   - Prometheus + Grafana (optional, for metrics exploration)
+#
+# What this does NOT containerize (deliberately — these need native install):
+#   - Janus Gateway: heavy native deps (libsrtp, libnice), config files vary
+#     between distros. Use distro package OR build from source per Janus docs.
+#   - janus-camera-page service: needs /dev/video* access + ffmpeg + V4L2,
+#     simpler to run via systemd on host.
+#   - textroom_relay service: same — runs as host process.
+#
+# For full production deploy see docs/DEPLOYMENT.md.
+# For minimal dev test of changes to gateway code, this compose suffices.
+
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: api_gateway_service/Dockerfile
+    image: api-gateway:dev
+    container_name: camera-stack-gateway-dev
+    environment:
+      PORT: 8201
+      WEB_CONCURRENCY: 1
+      READINESS_CHECK_SERVICES: 0
+      READINESS_CHECK_AUTH: 0
+      LOG_LEVEL: DEBUG
+      # Point at host services (assumes host network mode OR Docker host.docker.internal)
+      SERVICE_MAP_JSON: '{"color_camera":{"url":"http://host.docker.internal:8900","prefix":""},"cameras":{"url":"http://host.docker.internal:8900","prefix":"/cameras"}}'
+    ports:
+      - "8201:8201"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux compat
+    restart: unless-stopped
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: camera-stack-coturn-dev
+    network_mode: host    # TURN needs host networking for RTP relay
+    command: >
+      -n --log-file=stdout
+      --listening-port=3478
+      --tls-listening-port=5349
+      --use-auth-secret
+      --static-auth-secret=dev-turn-secret-CHANGE-ME
+      --realm=local.test
+      --no-cli
+      --no-multicast-peers
+      --min-port=49152
+      --max-port=49999
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: camera-stack-prometheus-dev
+    volumes:
+      - ./infrastructure/prometheus-dev.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    profiles: ["metrics"]   # only run if `--profile metrics` passed
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: camera-stack-grafana-dev
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: dev-CHANGE-ME
+      GF_SECURITY_ADMIN_USER: admin
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    profiles: ["metrics"]
+
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   # Gateway + coturn only
+#
+#   docker compose -f docker-compose.dev.yml --profile metrics up -d
+#   # Adds Prometheus (port 9090) + Grafana (port 3000)

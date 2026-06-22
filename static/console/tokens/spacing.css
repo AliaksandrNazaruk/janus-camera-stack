@@ -1,0 +1,46 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * SPACING · RADII · SHADOWS · BORDERS — Gateway Console
+ * Dense industrial layout: 4px base grid, tight radii, mostly flat with
+ * hairline borders. Shadows are reserved for things that float (drawers,
+ * dialogs, dropdowns) — surfaces in the document plane use borders, not lift.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ─ Spacing · 4px grid ────────────────────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ─ Radii — tight; the console reads as engineered, not soft ──────────── */
+  --radius-xs:   3px;   /* code chips, micro-pills                          */
+  --radius-sm:   4px;   /* buttons, inputs                                  */
+  --radius-md:   6px;   /* sensor chips, wells                              */
+  --radius-lg:   8px;   /* cards, panels                                    */
+  --radius-xl:   12px;  /* drawers, dialogs                                 */
+  --radius-pill: 999px; /* status badges                                    */
+
+  /* ─ Shadows — only for floating layers ────────────────────────────────── */
+  --shadow-sm:      0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md:      0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-lg:      0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-overlay: 0 24px 64px rgba(2, 6, 23, 0.28);
+  --shadow-focus:   0 0 0 3px rgba(59, 130, 246, 0.35); /* focus ring        */
+
+  /* ─ Border widths ────────────────────────────────────────────────────── */
+  --border-hairline: 1px;
+  --border-accent:   3px;  /* left-accent on cards (local vs remote, status) */
+
+  /* ─ Layout rails ─────────────────────────────────────────────────────── */
+  --sidebar-w:  220px;
+  --topbar-h:   52px;
+  --alertbar-h: 36px;
+  --drawer-w:   460px;
+  --content-max:1320px;
+}

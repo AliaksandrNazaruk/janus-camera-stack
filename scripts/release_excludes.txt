@@ -1,0 +1,24 @@
+*/host_infra/secrets.yml
+*/camera-secrets.env
+camera-secrets.env
+*.pre-rotate-*
+*.pem
+*.key
+*.token
+__pycache__
+.pytest_cache
+.hypothesis
+.ruff_cache
+.venv
+venv
+node_modules
+*.pyc
+*.tmp
+# release hygiene (A1, post 2026-06-21 review) — non-source artifacts must NOT ship:
+# nested archives (a stray review tarball got bundled), local dev settings, generated soak runs.
+*.tar
+*.tar.gz
+*.tgz
+.claude
+*.local.json
+soak_*.csv

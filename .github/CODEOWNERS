@@ -1,0 +1,18 @@
+# Code owners — auto-assigned reviewers per path.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything (catch-all)
+*       @YOUR_ORG/maintainers
+
+# Layer-specific owners (update with actual GitHub team/user handles)
+/app/                       @YOUR_ORG/l4-maintainers
+/static/                    @YOUR_ORG/frontend-maintainers
+/host_infra/                @YOUR_ORG/infra-maintainers
+/deploy/                    @YOUR_ORG/infra-maintainers
+/docs/                      @YOUR_ORG/docs-maintainers
+
+# Security-sensitive — require review by security team
+/SECURITY.md                @YOUR_ORG/security
+/app/core/admin.py          @YOUR_ORG/security
+/app/middleware/            @YOUR_ORG/security
+/app/services/audit_log.py  @YOUR_ORG/security

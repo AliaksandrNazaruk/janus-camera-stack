@@ -1,0 +1,30 @@
+[Unit]
+Description=Stream lifecycle reconciler (boot-time; honors desired_active flags)
+Documentation=https://github.com/anthropics/robot/blob/main/janus_camera_page/app/tools/sensor_reconcile.py
+# Boot order:
+#   • network.target  — sensor_lifecycle calls Janus admin API (HTTP localhost)
+#   • janus.service   — mountpoint create/destroy hits janus.plugin.streaming
+# Не depend на janus-camera-page.service — reconciler imports app.services
+# directly (in-process), no HTTP roundtrip. This avoids circular ordering.
+After=network.target janus.service
+Wants=janus.service
+
+[Service]
+Type=oneshot
+# Stay в "active (exited)" state после finish так systemctl status
+# показывает last-run result without re-triggering. Without this, unit
+# flickers к inactive immediately после exit.
+RemainAfterExit=yes
+User=boris
+WorkingDirectory=/opt/janus-camera-page
+# Use system python3 — matches janus-camera-page.service convention.
+# All app.services imports resolve from WorkingDirectory.
+ExecStart=/usr/bin/python3 -m app.tools.sensor_reconcile
+# Reconciler exits 0 even с partial failures (per-stream errors logged к
+# journal). True non-zero exit means catastrophic state-file failure.
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+[Unit]
+Description=RTSP IP camera %i → H264 RTP encoder
+Documentation=https://github.com/<org>/robot/blob/main/janus_camera_page/docs/ADAPTERS.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=15
+
+[Service]
+Type=simple
+User=boris
+ExecStart=/usr/local/bin/rtp-rtsp.sh %i
+Restart=always
+# RTSP camera reconnects + network blips common — moderate retry interval
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=5
+SendSIGKILL=yes
+SuccessExitStatus=143 255 SIGTERM
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

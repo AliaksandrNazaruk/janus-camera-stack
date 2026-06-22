@@ -1,0 +1,27 @@
+[Unit]
+Description=RealSense %i RTP encoder (FIFO → H264 → Janus)
+After=network.target realsense-mux.service
+# Hard dependency: ffmpeg blocks on empty FIFO без mux producer.
+Requires=realsense-mux.service
+# PartOf: когда mux restart'ится, consumer тоже restart'ится — reopen свежий
+# FIFO. Без этого: mux restart wipes /run/realsense (RuntimeDirectory), старый
+# ffmpeg держит fd на unlinked inode → видео висит пока ffmpeg сам не упадёт по
+# EOF. PartOf делает reconnect детерминированным/мгновенным.
+PartOf=realsense-mux.service
+StartLimitIntervalSec=300
+StartLimitBurst=15
+
+[Service]
+Type=simple
+User=boris
+ExecStart=/usr/local/bin/rs-stream.sh %i
+Restart=always
+RestartSec=2
+KillSignal=SIGTERM
+TimeoutStopSec=5
+SendSIGKILL=yes
+SuccessExitStatus=143 255 SIGTERM
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

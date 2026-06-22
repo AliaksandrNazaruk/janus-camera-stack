@@ -1,0 +1,22 @@
+<!-- @dsCard group="Type" viewport="700x150" name="Mono-for-Data Rule" subtitle="Anything a machine emits is set in mono — ids, IPs, ports, ages, hashes" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-card); color: var(--text-body); }
+  .wrap { padding: 18px 22px; display: flex; flex-direction: column; gap: 11px; }
+  .line { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .label { color: var(--text-muted); width: 130px; flex: none; }
+  .val { font: var(--weight-regular) var(--text-sm) var(--font-mono); color: var(--text-strong); background: var(--surface-sunken); padding: 2px 7px; border-radius: var(--radius-xs); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="line"><span class="label">binding_id</span><span class="val">cam55:color</span></div>
+    <div class="line"><span class="label">rtp_target</span><span class="val">192.168.1.10:5100</span><span class="label" style="width:auto">rtp_age</span><span class="val">90ms</span></div>
+    <div class="line"><span class="label">mountpoint</span><span class="val">2000</span><span class="label" style="width:auto">host_key</span><span class="val">SHA256:8d:f2:…:a1</span></div>
+  </div>
+</body>
+</html>

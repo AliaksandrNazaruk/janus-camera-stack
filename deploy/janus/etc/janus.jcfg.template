@@ -1,0 +1,54 @@
+# Janus main config rendered by install.sh.
+# Substitutes: @JANUS_CFG_DIR@, @JANUS_PLUGINS_DIR@, @JANUS_TRANSPORTS_DIR@,
+#              @JANUS_ADMIN_SECRET@, @ICE_ENFORCE_LIST@
+#
+# Operator MUST edit nat_1_1_mapping below AFTER install — this is the node's
+# public IP (auto-detect is not reliable in multi-NIC scenarios).
+
+general: {
+    configs_folder    = "@JANUS_CFG_DIR@"
+    plugins_folder    = "@JANUS_PLUGINS_DIR@"
+    transports_folder = "@JANUS_TRANSPORTS_DIR@"
+    debug_level             = 1
+    session_timeout         = 90
+    reclaim_session_timeout = 30
+    admin_secret            = "@JANUS_ADMIN_SECRET@"
+}
+
+# BEGIN NAT AUTO
+# This block is managed by janus-nat-updater + janus-turn-rotator.
+# Manual edits between BEGIN/END markers will be preserved BUT may be
+# overwritten by the rotator timer. Edit OUTSIDE the markers if you need
+# permanent changes.
+nat: {
+    ice_tcp            = false
+    full_trickle       = true
+    ignore_mdns        = true
+    keep_private_host  = false
+    ice_enforce_list   = "@ICE_ENFORCE_LIST@"
+
+    # STUN — public Google STUN works for most cases.
+    stun_server = "stun.l.google.com"
+    stun_port   = 19302
+
+    # TURN — operator configures. Either:
+    #   (a) Local coturn (recommended): turn_server="127.0.0.1", turn_port=3478
+    #       Use-auth-secret mode requires ephemeral creds; either run
+    #       janus-turn-rotator.timer OR comment out turn_* and use turn_rest_api
+    #   (b) Public TURN service with static creds
+    # Default: commented out — set after install
+    # turn_server = "127.0.0.1"
+    # turn_port   = 3478
+    # turn_type   = "udp"
+    # turn_user   = "REPLACE_VIA_ROTATOR"
+    # turn_pwd    = "REPLACE_VIA_ROTATOR"
+
+    # CRITICAL: nat_1_1_mapping = public-IP-of-this-node
+    # ICE candidates advertise this. Wrong = remote clients fail to connect.
+    # Set via admin_config page OR pass --nat-mapping=IP to jcfg_renderer.
+    nat_1_1_mapping = "@NAT_1_1_MAPPING@"
+
+    min_port = 40000
+    max_port = 41000
+}
+# END NAT AUTO

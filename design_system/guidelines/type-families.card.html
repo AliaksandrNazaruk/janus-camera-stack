@@ -1,0 +1,35 @@
+<!-- @dsCard group="Type" viewport="700x190" name="Typefaces" subtitle="IBM Plex Sans for UI · IBM Plex Mono for machine-emitted data" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-card); color: var(--text-strong); }
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 20px; }
+  .col { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 16px 18px; }
+  .tag { font: var(--weight-semibold) var(--text-xs)/1 var(--font-sans); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-muted); }
+  .big { font-size: 34px; line-height: 1.1; margin: 10px 0 4px; }
+  .sans { font-family: var(--font-sans); }
+  .mono { font-family: var(--font-mono); }
+  .meta { font: var(--weight-regular) var(--text-sm)/1.5 var(--font-mono); color: var(--text-muted); }
+  .glyphs { font-size: 13px; letter-spacing: 0.04em; color: var(--text-body); margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="col">
+      <div class="tag">UI · Interface</div>
+      <div class="big sans" style="font-weight:600">IBM Plex Sans</div>
+      <div class="meta">400 · 500 · 600 · 700</div>
+      <div class="glyphs sans">Command Center — Nodes &amp; Streams</div>
+    </div>
+    <div class="col">
+      <div class="tag">Data · Technical</div>
+      <div class="big mono" style="font-weight:500">IBM Plex Mono</div>
+      <div class="meta">400 · 500 · 600</div>
+      <div class="glyphs mono">cam55:color · 192.168.1.10:5100 · 90ms</div>
+    </div>
+  </div>
+</body>
+</html>

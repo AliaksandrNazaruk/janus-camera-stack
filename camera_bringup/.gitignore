@@ -1,0 +1,24 @@
+# Build artifacts / caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Virtualenv (heavy, contains compiled pyrealsense2 binaries — per-host)
+.venv/
+
+# Runtime state (per-host, not source)
+.pause-state/
+
+# Editor cruft
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

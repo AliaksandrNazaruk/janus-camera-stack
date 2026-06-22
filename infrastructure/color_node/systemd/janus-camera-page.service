@@ -1,0 +1,17 @@
+[Unit]
+Description=Janus camera page (FastAPI)
+After=network-online.target janus.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=30s
+WorkingDirectory=/opt/janus-camera-page
+ExecStart=/usr/bin/python3 /opt/janus-camera-page/main.py
+Restart=always
+RestartSec=2
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target

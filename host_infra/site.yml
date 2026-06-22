@@ -1,0 +1,37 @@
+---
+# host_infra — main playbook
+#
+# Usage:
+#   ansible-playbook site.yml --check --diff   # verify (dry-run)
+#   ansible-playbook site.yml --ask-become-pass   # apply
+
+- name: Host infrastructure for camera-stack gateway node
+  hosts: gateway_nodes
+  gather_facts: yes
+  become: yes
+
+  vars_files:
+    # Local secrets (NOT in git — см. secrets.yml.example для template).
+    # Если файл отсутствует — apply упадёт с явной ошибкой "no secrets.yml".
+    - secrets.yml
+
+  pre_tasks:
+    - name: Verify we are running on supported OS
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution in ['Ubuntu', 'Debian', 'Raspbian']
+          - ansible_distribution_version is version('22.04', '>=')
+        fail_msg: "host_infra targets Ubuntu/Debian 22.04+ (got {{ ansible_distribution }} {{ ansible_distribution_version }})"
+
+  roles:
+    - sysctl       # L1: kernel knobs (ip_forward, rp_filter, conntrack)
+    - network      # L1: iptables MASQUERADE для camera LAN
+    - encoder      # L2: encoder-admin/camera-admin CLI + sensor-reconcile (rs-stream@ via install.sh)
+    - janus        # L3: janus.service + jcfg + NAT updater (script+cron) + TURN rotator + legacy cleanup
+
+  post_tasks:
+    - name: Summary
+      ansible.builtin.debug:
+        msg: |
+          host_infra apply complete on {{ inventory_hostname }}.
+          Run `make status` to inspect current sysctl/iptables.

@@ -1,0 +1,19 @@
+# Pre-flight snapshots (per-apply backups, host-specific)
+.snapshots/
+
+# Local secrets (override real values — see secrets.yml.example for template)
+secrets.yml
+
+# Ansible artifacts
+*.retry
+ansible.log
+
+# Pytest caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
