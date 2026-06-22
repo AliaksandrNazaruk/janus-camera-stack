@@ -16,7 +16,7 @@ uvicorn[standard]>=0.24.0,<0.35.0
 starlette>=0.27.0,<0.42.0
 
 # ── HTTP client ───────────────────────────────────────────────────────
-httpx>=0.25.0,<0.29.0         # async HTTP — all Janus, proxy, and cross-node communication
+httpx>=0.28.1,<0.29.0         # async HTTP — all Janus, proxy, and cross-node communication
 
 # ── Data validation ───────────────────────────────────────────────────
 pydantic>=2.5.0,<3.0
