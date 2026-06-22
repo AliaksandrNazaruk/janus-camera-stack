@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/YOUR_ORG/janus-camera-page/blob/main/SECURITY.md
+    url: https://github.com/AliaksandrNazaruk/janus-camera-stack/blob/main/SECURITY.md
     about: Do NOT open public issues for security. See SECURITY.md.
   - name: Question / discussion
-    url: https://github.com/YOUR_ORG/janus-camera-page/discussions
+    url: https://github.com/AliaksandrNazaruk/janus-camera-stack/discussions
     about: For usage questions, design discussion, or general chat.

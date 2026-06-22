@@ -24,7 +24,7 @@ For dev / single-customer deployments, a single VM with public IP suffices.
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/YOUR_ORG/janus-camera-page.git
+git clone https://github.com/AliaksandrNazaruk/janus-camera-stack.git
 cd janus-camera-page
 
 # 2. Generate secrets

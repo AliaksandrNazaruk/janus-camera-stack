@@ -1,13 +1,20 @@
-janus-camera-page
-Copyright 2026 janus-camera-page contributors
+janus-camera-stack
+Copyright 2026 janus-camera-stack contributors
 
-This product includes software developed by the janus-camera-page
+This product includes software developed by the janus-camera-stack
 contributors.
 
 Third-party components shipped with or required by this software:
 
-- Janus Gateway (https://janus.conf.meetecho.com/) — GPL v3
-  Not vendored; configured as runtime dependency. See deploy/janus/.
+- Janus Gateway SERVER (https://janus.conf.meetecho.com/) — GPL v3
+  Not vendored; a runtime dependency, built from source by deploy/janus/Dockerfile
+  or run natively. The server is a separate process — this software interoperates
+  with it over its network API (aggregation), it is not linked into it.
+
+- janus.js BROWSER CLIENT (Meetecho) — MIT
+  Vendored at templates/janus.js (MIT is compatible with this project's Apache-2.0
+  license). The MIT copyright header is retained in the file. Refresh/upgrade with
+  scripts/fetch-janus-js.sh.
 
 - coturn (https://github.com/coturn/coturn) — BSD-3-Clause
   Not vendored; configured as runtime dependency.
@@ -20,5 +27,5 @@ Third-party components shipped with or required by this software:
 - pyrealsense2 (Intel RealSense SDK) — Apache-2.0
   Optional, used by realsense_mux.py on edge nodes with D435/D435i hardware.
 
-When redistributing janus-camera-page bundled with these dependencies,
+When redistributing janus-camera-stack bundled with these dependencies,
 preserve their respective LICENSE / NOTICE files.

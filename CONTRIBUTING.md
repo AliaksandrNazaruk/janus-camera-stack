@@ -17,7 +17,7 @@ By participating you agree to abide by its terms.
 
 ### Local dev (L4 only)
 ```bash
-git clone https://github.com/YOUR_ORG/janus-camera-page.git
+git clone https://github.com/AliaksandrNazaruk/janus-camera-stack.git
 cd janus-camera-page
 python -m venv .venv
 source .venv/bin/activate

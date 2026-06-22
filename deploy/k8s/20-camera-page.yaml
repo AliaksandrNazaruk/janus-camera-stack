@@ -25,7 +25,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: camera-page
-          image: ghcr.io/YOUR_ORG/janus-camera-page:latest   # operator overrides via Kustomize/Helm
+          image: ghcr.io/aliaksandrnazaruk/janus-camera-stack:latest   # operator overrides via Kustomize/Helm
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

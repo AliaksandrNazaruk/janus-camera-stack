@@ -20,7 +20,7 @@ separate overlay layer, not in the stack.
 
 > **New here?** Read [`docs/HANDOFF.md`](docs/HANDOFF.md) — the guided entry
 > point (architecture map, the enforced invariants, where things live, how to
-> change it safely). Replace `YOUR_ORG` in CI/CODEOWNERS with your GitHub org.
+> change it safely).
 
 ---
 
@@ -298,6 +298,11 @@ tests/               unit + integration + architecture-fitness guards
 
 ### Bundled dependency: `janus.js`
 
-The backend serves Janus's browser library from `templates/janus.js`. It is not
-vendored here — copy it from the [janus-gateway](https://github.com/meetecho/janus-gateway)
-`html/` folder into `templates/janus.js` before first use.
+The backend serves Janus's browser client from `templates/janus.js`. It **is**
+vendored (it is **MIT**-licensed — Meetecho — which is compatible with this
+project's Apache-2.0 license; the MIT header is retained in the file). To refresh
+or bump the version: `JANUS_VERSION=v1.2.4 scripts/fetch-janus-js.sh`.
+
+> Note: the Janus Gateway **server** is GPL-3.0 and is **not** vendored — it runs
+> as a separate process (built from source by `deploy/janus/`, or installed
+> natively). See [`NOTICE`](NOTICE).

@@ -60,5 +60,5 @@ Versions: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 # 2. Tag
 git tag -a v0.1.0 -m "Initial public release"
 git push origin v0.1.0
-# 3. CI publishes container image to ghcr.io/YOUR_ORG/janus-camera-page:v0.1.0
+# 3. CI publishes container image to ghcr.io/aliaksandrnazaruk/janus-camera-stack:v0.1.0
 ```

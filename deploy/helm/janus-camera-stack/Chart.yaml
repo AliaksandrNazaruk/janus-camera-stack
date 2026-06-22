@@ -7,7 +7,7 @@ description: |
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
-home: https://github.com/YOUR_ORG/janus-camera-page
+home: https://github.com/AliaksandrNazaruk/janus-camera-stack
 keywords:
   - webrtc
   - streaming
@@ -15,6 +15,6 @@ keywords:
   - camera
   - video
 maintainers:
-  - name: YOUR_ORG
+  - name: AliaksandrNazaruk
 sources:
-  - https://github.com/YOUR_ORG/janus-camera-page
+  - https://github.com/AliaksandrNazaruk/janus-camera-stack

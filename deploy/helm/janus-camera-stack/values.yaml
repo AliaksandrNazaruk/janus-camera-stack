@@ -9,7 +9,7 @@ imagePullPolicy: IfNotPresent
 cameraPage:
   enabled: true
   image:
-    repository: ghcr.io/YOUR_ORG/janus-camera-page
+    repository: ghcr.io/aliaksandrnazaruk/janus-camera-stack
     tag: latest
   replicaCount: 1
   cameraType: color_camera
