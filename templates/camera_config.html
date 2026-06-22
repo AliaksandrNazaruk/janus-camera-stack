@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Camera configuration — {{ cam_type }}</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/camera_config.css?v=3">
+</head>
+<body data-cam-type="{{ cam_type }}" data-api-prefix="{{ api_prefix | default('') }}">
+  <h1>Camera configuration</h1>
+  <p class="subtitle">Live encoder settings for <code>{{ cam_type }}</code>. Apply triggers a brief encoder restart (~3 sec stream pause).</p>
+
+  <div id="status" class="info">Initializing…</div>
+
+  <form id="cfgForm" autocomplete="off">
+    <fieldset>
+      <legend>Capture <span id="sourceHint" class="hint inline"></span></legend>
+      <div class="row">
+        <label for="resolution">Resolution</label>
+        <select id="resolution" required></select>
+      </div>
+      <div class="row">
+        <label for="fps">Frame rate</label>
+        <select id="fps" required></select>
+      </div>
+      <div class="row">
+        <label>Rotation</label>
+        <div class="rotation-group" id="rotationGroup">
+          <input type="radio" name="rotation" id="rot0"   value="0"><label class="rot-btn" for="rot0">0°</label>
+          <input type="radio" name="rotation" id="rot90"  value="90"><label class="rot-btn" for="rot90">90°</label>
+          <input type="radio" name="rotation" id="rot180" value="180"><label class="rot-btn" for="rot180">180°</label>
+          <input type="radio" name="rotation" id="rot270" value="270"><label class="rot-btn" for="rot270">270°</label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Encode</legend>
+      <div class="row">
+        <label for="bitrate">Bitrate (kbps)</label>
+        <input type="number" id="bitrate" min="200" max="20000" step="100" required>
+      </div>
+      <div class="row">
+        <label for="preset">x264 preset</label>
+        <select id="preset">
+          <option>ultrafast</option><option>superfast</option><option selected>veryfast</option>
+          <option>faster</option><option>fast</option><option>medium</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="tune">x264 tune</label>
+        <select id="tune">
+          <option selected>zerolatency</option><option>fastdecode</option><option>film</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="primary" id="applyBtn">Apply &amp; restart encoder</button>
+      <button type="button" id="reloadBtn">Reload current</button>
+      <span class="hint" id="liveHint"></span>
+    </div>
+  </form>
+
+  <h2>Diagnostics</h2>
+  <p class="links">
+    <a href="/color_view.html">Live viewer</a>
+    <a href="/snapshot.jpg" target="_blank">Latest snapshot</a>
+    <a href="/sensors" target="_blank">RealSense catalog (JSON)</a>
+    <a href="/modes" target="_blank">V4L2 modes (JSON)</a>
+  </p>
+
+  <script src="/static/js/console_lib.js?v=1"></script>
+  <script src="/static/js/camera_config.js?v=4"></script>
+</body>
+</html>

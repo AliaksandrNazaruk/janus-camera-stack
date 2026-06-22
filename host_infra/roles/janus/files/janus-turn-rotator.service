@@ -1,0 +1,17 @@
+[Unit]
+Description=Janus TURN credential rotator (HMAC-SHA1 ephemeral creds)
+Documentation=man:systemctl(1)
+After=network-online.target janus.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/janus-turn-rotator
+StandardOutput=journal
+StandardError=journal
+# Run as root (writes /opt/janus/etc/janus/janus.jcfg, restarts janus)
+User=root
+
+# Safety: limit runtime + memory
+TimeoutStartSec=120
+MemoryMax=64M

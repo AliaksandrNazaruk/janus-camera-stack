@@ -1,0 +1,5 @@
+---
+# L3 janus vars
+
+janus_etc_dir: /opt/janus/etc/janus
+janus_service_name: janus.service

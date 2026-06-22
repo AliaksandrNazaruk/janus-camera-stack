@@ -1,0 +1,370 @@
+---
+# L3 Janus: captures STATIC config files (immutable parts).
+#
+# Owns:
+#   /etc/systemd/system/janus.service + drop-ins
+#   /opt/janus/etc/janus/janus.transport.{http,websockets}.jcfg
+#   /opt/janus/etc/janus/janus.plugin.streaming.jcfg (mountpoint static config)
+#   /opt/janus/etc/janus/janus.plugin.textroom.jcfg
+#
+# Does NOT own (MUTABLE runtime, owned by other component):
+#   /opt/janus/etc/janus/janus.jcfg            ← updated by update-nat-mapping.sh
+#                                                (nat_1_1_mapping + TURN creds)
+#   /opt/janus/etc/janus/janus.jcfg.tpl        ← template для regen
+#   /opt/janus/etc/janus/streams.d/*           ← runtime mountpoint CRUD (если активно)
+#
+# Known issues (см. CONTRACT.md §janus):
+#   - streaming mountpoint secret = "changeme" (placeholder, security)
+#   - streaming admin_key = "stream-admin-123" (default)
+#   - textroom secret loaded from host_infra/secrets.yml (currently reuses sudo password —
+#     TODO: rotate, см. CONTRACT.md known issues)
+#   - TURN cred expiry 2027-09-21 — no rotation yet (TODO)
+#   - Сейчас не используется janus.jcfg.tpl — captured только current janus.jcfg
+#     (runtime). При следующей public IP change cron перепишет.
+
+# ── systemd unit ──────────────────────────────────────────────────
+
+- name: Install janus.service unit
+  ansible.builtin.copy:
+    src: janus.service
+    dest: /etc/systemd/system/janus.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - systemd daemon-reload
+    - restart janus
+
+- name: Ensure janus.service.d drop-in dir
+  ansible.builtin.file:
+    path: /etc/systemd/system/janus.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install janus.service drop-in override.conf
+  ansible.builtin.copy:
+    src: dropin-override.conf
+    dest: /etc/systemd/system/janus.service.d/override.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - systemd daemon-reload
+    - restart janus
+
+- name: Install janus.service drop-in paths.conf
+  ansible.builtin.copy:
+    src: dropin-paths.conf
+    dest: /etc/systemd/system/janus.service.d/paths.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - systemd daemon-reload
+    - restart janus
+
+# ── Transport configs (immutable) ─────────────────────────────────
+
+- name: Install janus HTTP transport config
+  ansible.builtin.copy:
+    src: transport-http.jcfg
+    dest: "{{ janus_etc_dir }}/janus.transport.http.jcfg"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart janus
+
+- name: Install janus WebSocket transport config
+  ansible.builtin.copy:
+    src: transport-websockets.jcfg
+    dest: "{{ janus_etc_dir }}/janus.transport.websockets.jcfg"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart janus
+
+# ── Plugin configs (mostly immutable, mountpoint inline) ──────────
+
+- name: Install streaming plugin config (generated from cameras dict — single source of truth)
+  ansible.builtin.template:
+    src: plugin-streaming.jcfg.j2
+    dest: "{{ janus_etc_dir }}/janus.plugin.streaming.jcfg"
+    owner: root
+    group: janus       # janus user должен читать (process runs as janus:janus)
+    mode: '0640'       # contains admin_key + per-mountpoint secrets, restrict from non-janus
+  notify: restart janus
+
+- name: Install textroom plugin config (secret from secrets.yml — joystick datachannel)
+  ansible.builtin.template:
+    src: plugin-textroom.jcfg.j2
+    dest: "{{ janus_etc_dir }}/janus.plugin.textroom.jcfg"
+    owner: root
+    group: janus       # janus process нуждается в read access
+    mode: '0640'       # contains secret, restrict from non-janus
+  notify: restart janus
+
+# ── Service enable ────────────────────────────────────────────────
+
+- name: Ensure janus.service enabled
+  ansible.builtin.systemd:
+    name: "{{ janus_service_name }}"
+    enabled: yes
+    daemon_reload: yes
+
+# ── janus.jcfg writers (coordinated через flock /var/lock/janus-jcfg.lock) ──
+# ДВА процесса модифицируют janus.jcfg (multi-writer pattern):
+#   1. janus-nat-updater.sh  (cron */15min) — patches nat_1_1_mapping when public IP changes
+#   2. janus-turn-rotator    (systemd timer daily) — rotates HMAC TURN creds before expiry
+#
+# Both acquire exclusive lock на /var/lock/janus-jcfg.lock перед read-modify-write.
+# Без lock возможен race: один write'ает свои mutations, другой их затирает.
+# Both restart janus после mutations — flock также coordinates restart timing.
+
+# ── NAT updater (cron */15min) ─────────────────────────────────────
+# Polls public IP, updates nat_1_1_mapping. Hardened version с flock + atomic write
+# (старый /etc/robot/update-nat-mapping.sh использовал sed -i без coordination).
+
+- name: Install janus-nat-updater script (replaces legacy /etc/robot/update-nat-mapping.sh)
+  ansible.builtin.copy:
+    src: janus-nat-updater.sh
+    dest: /etc/robot/update-nat-mapping.sh        # keep filename для backwards compat cron
+    owner: root
+    group: root
+    mode: '0755'
+  # Cron job сам себя regen'ит — script update on disk = next run uses new code
+
+# ── TURN credential rotator (deadline: 2027-03-24) ────────────────
+# Pure-stdlib Python script + systemd timer (daily check).
+# Idempotent: noop пока expiry > threshold (default 30 days before).
+# Uses jcfg_lock() (same flock as NAT updater).
+
+- name: Install janus-turn-rotator Python script
+  ansible.builtin.copy:
+    src: janus-turn-rotator.py
+    dest: /usr/local/bin/janus-turn-rotator
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install janus-turn-rotator.service
+  ansible.builtin.copy:
+    src: janus-turn-rotator.service
+    dest: /etc/systemd/system/janus-turn-rotator.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: systemd daemon-reload
+
+- name: Install janus-turn-rotator.timer (daily)
+  ansible.builtin.copy:
+    src: janus-turn-rotator.timer
+    dest: /etc/systemd/system/janus-turn-rotator.timer
+    owner: root
+    group: root
+    mode: '0644'
+  notify: systemd daemon-reload
+
+- name: Enable+start janus-turn-rotator.timer
+  ansible.builtin.systemd:
+    name: janus-turn-rotator.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+# ── janus-admin CLI (L3 boundary для L4 + other callers) ──────────────
+# L4 (janus_camera_page) ранее shell-out'ил с sudo systemctl напрямую и
+# писал в /opt/janus/etc/janus/janus.jcfg сам. Это нарушало layer boundary:
+# L4 KNEW L3's implementation (systemctl, jcfg format). Теперь L3 exposes
+# explicit CLI contract:
+#   janus-admin restart            — restart janus.service (под flock)
+#   janus-admin nat-config         — read JSON, patch jcfg, restart
+#   janus-admin status             — JSON state snapshot
+# L4 invokes via sudo (scoped sudoers entry — этот binary only).
+
+- name: Install janus-admin CLI (L3 boundary для L4)
+  ansible.builtin.copy:
+    src: janus-admin.py
+    dest: /usr/local/bin/janus-admin
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install sudoers entry для boris → janus-admin (NOPASSWD, scoped к binary)
+  ansible.builtin.copy:
+    content: |
+      # Allow boris user (L4 service runs as) to invoke janus-admin без password.
+      # Scoped к specific binary — НЕ полный sudo. Этот binary owns janus runtime ops.
+      boris ALL=(root) NOPASSWD: /usr/local/bin/janus-admin
+    dest: /etc/sudoers.d/janus-admin
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# ── service-admin: scoped systemd service control for L4 (P1 boundary) ───
+# Replaces the L4 app's broad `sudo /bin/systemctl restart <unit>` / `sudo systemctl reboot`.
+# The CLI itself allowlists units (janus/coturn/janus-textroom-relay/janus_camera_page_hook) +
+# refuses self, so the sudoers grant below is scoped to ONE binary, not full systemctl.
+
+- name: Install service-admin CLI (scoped systemd service control for L4)
+  ansible.builtin.copy:
+    src: service-admin.py
+    dest: /usr/local/bin/service-admin
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install sudoers entry for boris → service-admin (NOPASSWD, scoped to binary)
+  ansible.builtin.copy:
+    content: |
+      # Allow boris (the L4 service user) to invoke service-admin without a password.
+      # Scoped to THIS binary — NOT full systemctl. Replaces the broad /bin/systemctl
+      # restart/reboot the L4 app used directly (P1 service-control boundary).
+      boris ALL=(root) NOPASSWD: /usr/local/bin/service-admin
+    dest: /etc/sudoers.d/service-admin
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# ── Cleanup legacy sudoers entries (from pre-admin-CLI deploys) ───────
+# Pre-2026-06-14 deploys created multiple overlapping sudoers entries giving
+# boris user direct systemctl access (bypassing admin CLI boundaries):
+#   - /etc/sudoers.d/camera-fdir       (raw systemctl restart/start/is-active rtp-rgb + janus + REBOOT)
+#   - /etc/sudoers.d/camera-janus      (raw systemctl restart janus + rtp-rgb)
+#   - /etc/sudoers.d/janus-camera-api  (raw systemctl + janus-apply-config.sh path-injection vuln)
+#   - /etc/sudoers.d/rtp-rgb           (raw systemctl restart rtp-rgb)
+# After today's refactor, L4 uses ТОЛЬКО /usr/local/bin/{janus,encoder}-admin —
+# legacy entries обхотят new boundaries. Removing them enforces single-path access.
+
+- name: "[security] Remove legacy sudoers entries (replaced by janus-admin + encoder-admin)"
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/{{ item }}"
+    state: absent
+  loop:
+    - camera-fdir       # raw systemctl rtp-rgb/janus + reboot — replaced by admin CLIs
+    - camera-janus      # raw systemctl restart janus + rtp-rgb — replaced
+    - janus-camera-api  # raw systemctl + janus-apply-config.sh (path injection vuln)
+    - rtp-rgb           # raw systemctl restart rtp-rgb — replaced
+
+# Path injection vulnerability: takes arbitrary <src> <dest> args, installs as
+# root. Allowed by /etc/sudoers.d/janus-camera-api (removed above). Now binary
+# itself: deprecated, no callers (verified via grep production code).
+
+- name: "[security] Remove deprecated janus-apply-config.sh (arbitrary file write as root)"
+  ansible.builtin.file:
+    path: /usr/local/sbin/janus-apply-config.sh
+    state: absent
+
+# Backup dirs created by atomic_write helpers in turn-rotator + nat-updater +
+# janus-admin. Default mode 755 → world-readable. Contain historical jcfg
+# backups с TURN credentials в cleartext. Restrict to root-only.
+
+- name: "[security] Restrict /var/backups/janus-* perms (contain TURN creds in backups)"
+  ansible.builtin.file:
+    path: "/var/backups/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - janus-turn-rotator
+    - janus-nat-updater
+    - janus-admin
+
+# Backup retention — без cleanup, backups accumulate forever.
+# /var/backups/janus-nat-updater/ get backup на каждое public IP change.
+# /var/backups/janus-turn-rotator/ — раз в год при rotation. Низкая частота
+# но нет cleanup → eventually disk fills. Keep 90 days = ~270 IP changes max.
+
+- name: "[stability] Install daily cleanup для janus backup dirs (90-day retention)"
+  ansible.builtin.cron:
+    name: "janus backups retention (90-day cleanup)"
+    minute: "23"
+    hour: "3"
+    user: root
+    job: "find /var/backups/janus-* -type f -mtime +90 -delete 2>/dev/null"
+    state: present
+
+# fdir.jsonl — written by L4 fdir_events._persist(). Currently ~5MB after 3
+# months, will grow unbounded. Logrotate ensures bounded growth + retention.
+
+- name: "[stability] Logrotate config для /var/log/camera-fdir/fdir.jsonl"
+  ansible.builtin.copy:
+    content: |
+      /var/log/camera-fdir/fdir.jsonl {
+          weekly
+          rotate 8
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+          size 50M
+      }
+    dest: /etc/logrotate.d/camera-fdir
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "[stability] Ensure /var/log/camera-fdir/ exists (L4 writes events there)"
+  ansible.builtin.file:
+    path: /var/log/camera-fdir
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+# HTTP transport (port 8088) currently binds 0.0.0.0 (intended — used by L4 +
+# external WebRTC clients via cloudflared). Admin transport on Janus core
+# уровне (separate from HTTP plugin transport) — needs verification of bind.
+# Check the actual janus.transport.http.jcfg для admin endpoint config.
+
+# ── NAT updater scheduling (cron) — dedup со старым systemd timer ──
+# Из research §6.4: ДВА скрипта обновляли nat_1_1_mapping:
+#   1. systemd timer: janus-ip-refresh.timer (REGEN из template — time bomb!)
+#   2. root cron:    /etc/robot/update-nat-mapping.sh (in-place patch — теперь hardened с flock)
+# Оставляем cron (canonical), systemd timer disable'им.
+
+- name: "[nat] Stop+disable legacy janus-ip-refresh.timer (template regen — time bomb)"
+  ansible.builtin.systemd:
+    name: janus-ip-refresh.timer
+    state: stopped
+    enabled: no
+  register: timer_action
+  failed_when:
+    - timer_action.failed | default(false)
+    - "'Could not find the requested service' not in (timer_action.msg | default(''))"
+
+- name: "[nat] Stat NAT updater script (deployed выше — должен существовать)"
+  ansible.builtin.stat:
+    path: /etc/robot/update-nat-mapping.sh
+  register: nat_script_stat
+
+# NOTE: ранее здесь была lineinfile task удаляющая "legacy unmarked" entries
+# с regex '^[^#].*update-nat-mapping\.sh.*$'. Bug: regex также matches Ansible-
+# managed entry → она удалялась каждый apply → cron module re-adding → endless
+# 1-change drift. Legacy entries уже cleaned up manually, task removed.
+
+- name: "[nat] Register cron job */15min (требует script deployed выше)"
+  ansible.builtin.cron:
+    name: "update-nat-mapping (camera Janus NAT sync)"
+    minute: "*/15"
+    user: root
+    job: "/etc/robot/update-nat-mapping.sh >/dev/null 2>&1"
+    state: present
+  when: nat_script_stat.stat.exists
+
+# ── Legacy cleanup (one-shot, idempotent) ──────────────────────────
+# Из research §13: `@reboot sudo ln -s /dev/video0 /dev/video-realsense-rgb` в boris
+# crontab — древний hack, не нужен (udev rule создаёт правильный symlink). Idempotent.
+
+- name: "[cleanup] Remove legacy /dev/video0 symlink hack from boris crontab"
+  ansible.builtin.cron:
+    name: "legacy video-realsense-rgb symlink (handled by udev rule)"
+    user: boris
+    state: absent
+  changed_when: false
+  failed_when: false

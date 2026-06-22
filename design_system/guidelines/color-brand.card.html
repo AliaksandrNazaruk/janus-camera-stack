@@ -1,0 +1,29 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Signal Blue" subtitle="Primary action + provisioning/maintenance status" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-card); color: var(--text-body); }
+  .wrap { display: flex; gap: 0; padding: 18px; }
+  .sw { flex: 1; height: 88px; border-radius: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 10px; box-sizing: border-box; }
+  .sw:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+  .sw:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .sw .name { font: var(--weight-semibold) var(--text-xs)/1 var(--font-sans); }
+  .sw .hex { font: var(--weight-regular) var(--text-2xs)/1.4 var(--font-mono); opacity: 0.85; margin-top: 2px; }
+  .light { color: var(--white); }
+  .dark { color: var(--slate-900); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="sw dark" style="background:var(--blue-50)"><span class="name">50</span><span class="hex">#eff6ff</span></div>
+    <div class="sw dark" style="background:var(--blue-100)"><span class="name">100</span><span class="hex">#dbeafe</span></div>
+    <div class="sw light" style="background:var(--blue-500)"><span class="name">500</span><span class="hex">#3b82f6</span></div>
+    <div class="sw light" style="background:var(--blue-600)"><span class="name">600 · primary</span><span class="hex">#2563eb</span></div>
+    <div class="sw light" style="background:var(--blue-700)"><span class="name">700 · hover</span><span class="hex">#1d4ed8</span></div>
+    <div class="sw light" style="background:var(--blue-800)"><span class="name">800</span><span class="hex">#1e40af</span></div>
+  </div>
+</body>
+</html>

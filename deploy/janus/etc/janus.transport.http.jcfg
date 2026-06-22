@@ -1,0 +1,26 @@
+# HTTP / admin transport for Janus (for camera-page REST proxying).
+#
+# G2-sec: loopback-only control plane (closes IaC drift — the live .10 config
+# already binds admin to 127.0.0.1; this codifies the same posture in source so
+# a re-provision can't regress it). The browser never reaches Janus directly —
+# it goes through the L4 /janus + /janus-ws proxies, and the L4 + encoders talk
+# to Janus over loopback (app/services/janus_admin.py: http://127.0.0.1:8088).
+# Binding to 127.0.0.1 is defense-in-depth on top of the A2 firewall DROP.
+general: {
+    json = "indented"
+    base_path = "/janus"
+    threads = "unlimited"
+    http = true
+    port = 8088
+    ip = "127.0.0.1"
+    admin = true
+    admin_base_path = "/admin"
+    admin_http = true
+    admin_port = 7088
+    admin_ip = "127.0.0.1"
+}
+
+cors: {
+    # No allow_origin "*". Janus is loopback-bound; the only caller is the L4
+    # proxy (server-side httpx, needs no CORS). Matches the empty-cors live posture.
+}

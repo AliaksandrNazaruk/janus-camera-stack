@@ -1,0 +1,11 @@
+---
+- name: systemd daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: restart encoder service
+  # try-restart: только если service сейчас active. Если inactive — noop. Phase 2:
+  # color encoder = rs-stream@color (mux consumer). Не использовать systemd
+  # state=restarted: оно безусловно стартует сервис.
+  ansible.builtin.command: systemctl try-restart rs-stream@color.service
+  changed_when: true

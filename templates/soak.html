@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Soak Run Viewer</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/camera_config.css?v=3">
+  <style nonce="{{ style_nonce }}">
+    .panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+    .panel h2 { margin: 0 0 10px 0; font-size: 16px; color: #334155; }
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .chart { padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 4px; }
+    .chart h3 { margin: 0 0 4px 0; font-size: 13px; color: #475569; font-weight: 600; }
+    .chart-stats { font-size: 11px; color: #64748b; margin-bottom: 6px; font-family: monospace; }
+    .file-row { padding: 6px 0; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+    .file-row:hover { background: #f1f5f9; }
+    .file-row.active { background: #dbeafe; font-weight: 600; }
+    .file-name { font-family: monospace; color: #1e40af; }
+    .file-meta { color: #64748b; font-size: 11px; margin-left: 8px; }
+    .err-msg { color: #b91c1c; padding: 6px; background: #fef2f2; border-radius: 4px; }
+    .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #dcfce7; color: #166534; }
+    .stat-num { font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>Soak Run Viewer</h1>
+  <p class="subtitle">
+    <a href="/console.html" class="pill-link" style="background:#2563eb;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:13px;">← Console</a>
+    <span style="margin-left:12px;color:#64748b;font-size:13px;">Passive metric capture from soak_capture.sh runs</span>
+  </p>
+
+  <div id="status" class="info" style="padding:6px;margin-bottom:12px;"></div>
+
+  <div class="panel">
+    <h2>Available runs</h2>
+    <div id="filesList"><p class="muted">Loading…</p></div>
+    <p class="muted" style="font-size:11px;margin-top:8px;">Files in: <code id="filesDir"></code></p>
+  </div>
+
+  <div id="selectedRun" style="display:none;">
+    <div class="panel">
+      <h2 id="runTitle">—</h2>
+      <div id="runMeta" style="font-size:12px;color:#64748b;font-family:monospace;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Time series</h2>
+      <div class="chart-grid" id="chartGrid"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/console_lib.js?v=1" nonce="{{ script_nonce }}"></script>
+  <script nonce="{{ script_nonce }}">
+(function(){
+  'use strict';
+  // Sprint X4 console_lib: shared auth + formatters.
+  const CL = window.ConsoleLib;
+  const $ = CL.$;
+  const authFetch = CL.authFetch;
+  const setStatus = (msg, cls) => CL.setStatus(msg, cls, 'status');
+  const fmtBytes = CL.fmtBytes;
+  const fmtAgo = CL.fmtAgo;
+
+  // ─ File listing ─────────────────────────────────────────────────
+  async function loadFiles() {
+    setStatus('Loading file list…', 'info');
+    const r = await authFetch('/api/v1/admin/soak/files');
+    if (!r.ok) {
+      setStatus('Failed to load files: HTTP ' + r.status, 'error');
+      return;
+    }
+    const data = await r.json();
+    $('filesDir').textContent = data.dir;
+    if (!data.files.length) {
+      $('filesList').innerHTML = '<p class="muted">No soak_*.csv files yet — start with <code>bash scripts/soak_capture.sh</code></p>';
+      setStatus('No runs available', 'info');
+      return;
+    }
+    const html = data.files.reverse().map((f) => {
+      return '<div class="file-row" data-name="' + f.name + '">' +
+        '<span class="file-name">' + f.name + '</span>' +
+        '<span class="file-meta">' + f.samples + ' samples · ' + fmtBytes(f.size_bytes) + ' · ' + fmtAgo(f.mtime) + '</span>' +
+        '</div>';
+    }).join('');
+    $('filesList').innerHTML = html;
+    setStatus(data.files.length + ' run(s)', 'ok');
+
+    document.querySelectorAll('.file-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('.file-row').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+        loadRun(row.dataset.name);
+      });
+    });
+  }
+
+  // ─ CSV parsing + chart rendering ────────────────────────────────
+  function parseCsv(text) {
+    const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    if (lines.length < 2) return { headers: [], rows: [] };
+    const headers = lines[0].split(',');
+    const rows = lines.slice(1).map((l) => {
+      const parts = l.split(',');
+      const obj = {};
+      headers.forEach((h, i) => {
+        const v = parts[i];
+        obj[h] = v === '' || v === undefined ? null : (isNaN(Number(v)) ? v : Number(v));
+      });
+      return obj;
+    });
+    return { headers, rows };
+  }
+
+  function chartCard(metric, rows) {
+    const values = rows.map(r => r[metric]).filter(v => v !== null && Number.isFinite(v));
+    if (!values.length) {
+      return '<div class="chart"><h3>' + metric + '</h3><p class="muted">no data</p></div>';
+    }
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = values.reduce((a,b) => a+b, 0) / values.length;
+    const sorted = [...values].sort((a,b) => a-b);
+    const p99 = sorted[Math.floor(sorted.length * 0.99)];
+    const last = values[values.length-1];
+
+    const w = 280, h = 60;
+    const range = max - min || 1;
+    const step = w / Math.max(1, values.length - 1);
+    const points = values.map((v, i) => {
+      const x = i * step;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+
+    return '<div class="chart">' +
+      '<h3>' + metric + '</h3>' +
+      '<div class="chart-stats">' +
+        'last: <span class="stat-num">' + last.toFixed(2) + '</span>  ·  ' +
+        'min: <span class="stat-num">' + min.toFixed(2) + '</span>  ·  ' +
+        'max: <span class="stat-num">' + max.toFixed(2) + '</span>  ·  ' +
+        'avg: <span class="stat-num">' + avg.toFixed(2) + '</span>  ·  ' +
+        'p99: <span class="stat-num">' + p99.toFixed(2) + '</span>' +
+      '</div>' +
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:' + h + 'px;background:#f8fafc;border-radius:3px;">' +
+        '<polyline points="' + points + '" fill="none" stroke="#2563eb" stroke-width="1.2" vector-effect="non-scaling-stroke"/>' +
+      '</svg>' +
+    '</div>';
+  }
+
+  async function loadRun(name) {
+    setStatus('Loading ' + name + '…', 'info');
+    const r = await authFetch('/api/v1/admin/soak/file/' + encodeURIComponent(name));
+    if (!r.ok) {
+      setStatus('Failed: HTTP ' + r.status, 'error');
+      return;
+    }
+    const csv = await r.text();
+    const { headers, rows } = parseCsv(csv);
+    if (!rows.length) {
+      setStatus('Empty CSV', 'error');
+      return;
+    }
+    // Metadata: time range, sample count
+    const tsCol = headers.indexOf('ts') >= 0 ? 'ts' : headers[0];
+    const firstTs = rows[0][tsCol];
+    const lastTs = rows[rows.length-1][tsCol];
+    const span = lastTs - firstTs;
+    $('runTitle').textContent = name;
+    $('runMeta').innerHTML =
+      'Samples: <strong>' + rows.length + '</strong>  ·  ' +
+      'Span: <strong>' + (span/3600).toFixed(2) + 'h</strong>  ·  ' +
+      'Start: ' + new Date(firstTs*1000).toLocaleString() + '  ·  ' +
+      'End: ' + new Date(lastTs*1000).toLocaleString();
+
+    // Charts — skip ts + mode (non-numeric) columns
+    const metrics = headers.filter((h) => h !== 'ts' && h !== 'mode');
+    $('chartGrid').innerHTML = metrics.map((m) => chartCard(m, rows)).join('');
+    $('selectedRun').style.display = 'block';
+    setStatus('Loaded ' + rows.length + ' samples', 'ok');
+  }
+
+  loadFiles();
+})();
+  </script>
+</body>
+</html>

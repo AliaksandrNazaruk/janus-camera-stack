@@ -1,0 +1,100 @@
+# Default values for janus-camera-stack chart.
+# Override per-environment via -f values.production.yaml.
+
+# ── Global ──
+namespace: janus-camera-stack
+imagePullPolicy: IfNotPresent
+
+# ── L4 dashboard (FastAPI camera-page) ──
+cameraPage:
+  enabled: true
+  image:
+    repository: ghcr.io/YOUR_ORG/janus-camera-page
+    tag: latest
+  replicaCount: 1
+  cameraType: color_camera
+  defaultJoystickMode: "off"      # "off" = generic UI, "on" = robot wrapper
+  ingress:
+    enabled: true
+    className: nginx
+    host: cameras.example.com
+    tls:
+      enabled: true
+      secretName: cameras-tls
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ── Janus Gateway (WebRTC SFU) ──
+janus:
+  enabled: true
+  image:
+    repository: canyan/janus-gateway
+    tag: "1.2.4"
+  nodeSelector:
+    node-role.cloud.janus/sfu: "true"
+  # Public IP of the node hosting Janus. Used in nat_1_1_mapping in janus.jcfg.
+  # CRITICAL: must be the externally-reachable IP, else remote clients fail ICE.
+  publicIp: ""
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "2000m"
+      memory: "1Gi"
+
+# ── coturn (TURN/STUN relay) ──
+coturn:
+  enabled: true
+  image:
+    repository: coturn/coturn
+    tag: "4.6"
+  nodeSelector:
+    node-role.cloud.janus/turn: "true"
+  realm: cloud.example.com
+  publicHost: turn.example.com
+  minPort: 49152
+  maxPort: 49999
+
+# ── Secrets ──
+# IMPORTANT: rotate these per-environment. Use external secret managers
+# (Vault, AWS Secrets Manager, SOPS) for production — values here are
+# placeholder defaults.
+secrets:
+  # Pre-existing Secret name — set to non-empty to skip auto-creation.
+  existingSecret: ""
+  # Used only when existingSecret = "":
+  turnSecret: ""                      # MUST set in your overrides
+  internalApiSecret: ""               # MUST set in your overrides
+  janusAdminSecret: ""                # MUST set in your overrides
+
+# ── Observability ──
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: v2.51.0
+  retentionDays: 7
+
+grafana:
+  enabled: false   # off by default; bring your own or use kube-prometheus-stack
+  image:
+    repository: grafana/grafana
+    tag: "10.4.0"
+  adminPassword: ""   # set when enabled: true
+
+# ── Sensor plugins ──
+# Drop your custom sensor type plugins here. They'll be mounted at
+# /etc/robot/plugins.d in camera-page pod.
+plugins: {}
+# Example:
+#   plugins:
+#     my_thermal.py: |
+#       from app.services.sensor_registry import SensorType, register_sensor_type
+#       register_sensor_type(SensorType(key="thermal", label="Thermal",
+#         encoder_family="rtp-v4l2", encoder_instance_pattern="thermal-{index}"))

@@ -1,0 +1,101 @@
+---
+# host_infra global variables
+
+# ── Network ──────────────────────────────────────────────────────────
+# Camera LAN subnet (depth node .55 sits here, MASQUERADE'd to wlan0)
+camera_lan_subnet: "192.168.1.0/24"
+camera_lan_bridge: br0
+camera_uplink_iface: wlan0
+
+# ── conntrack для WebRTC ─────────────────────────────────────────────
+# WebRTC media — long-lived UDP streams. Default conntrack timeout=30s
+# рвёт сессию каждые ~30 сек без keepalive. 180s = safe для streaming.
+# ВАЖНО: меньше 60 — drops media. Больше 600 — wasteful conntrack table.
+conntrack_udp_timeout_stream: 180
+conntrack_udp_timeout_unreplied: 60
+
+# ── Sysctl ───────────────────────────────────────────────────────────
+sysctl_ip_forward: 1
+sysctl_rp_filter_all: 0
+sysctl_rp_filter_br0: 0
+
+# NAT updater: оставляем cron-based /etc/robot/update-nat-mapping.sh (in-place patch
+# через janus-nat-updater.sh с flock — НЕ time bomb), отключаем legacy systemd
+# janus-ip-refresh.timer (template regen = time bomb). Управляется janus role.
+
+# ── Cameras (single source of truth для encoder + janus mountpoint) ──
+# Каждая запись определяет одну камеру и её contract с Janus.
+# Источник истины для:
+#   - encoder env (PORT, MOUNTPOINT_ID)
+#   - janus.plugin.streaming.jcfg (id, port, rtcpport, codec)
+# Изменение здесь автоматически синхронизирует оба компонента (один apply).
+#
+# Контрактные поля (НЕ менять без согласования encoder↔janus):
+#   instance:        systemd template instance (соответствует /dev/<instance>)
+#   rtp_port:        UDP порт для RTP packets (ffmpeg → janus, localhost)
+#   rtcp_port:       UDP порт для RTCP feedback (обычно rtp_port + 1)
+#   mountpoint_id:   Janus streaming plugin mountpoint ID (client uses в WebSocket request)
+#   codec:           video codec (h264 — единственный supported для baseline + browser compat)
+#   payload_type:    RTP payload type (96 для dynamic H264)
+#   fmtp:            SDP fmtp string (profile-level-id для browser decoder)
+#   description:     human-readable label
+#   secret:          mountpoint secret (для admin API, не для viewer)
+#
+# Tuning поля (operator-tunable, см. encoder cam-rgb.tuning.env):
+#   default_width/height/fps/bitrate_kbps  — initial values при первом deploy
+cameras:
+  cam-rgb:
+    instance: cam-rgb
+    block_name: rgb-rtp       # libconfig block label в jcfg (preserves существующее наименование)
+    rtp_port: 5004
+    rtcp_port: 5005
+    mountpoint_id: 1305
+    codec: h264
+    payload_type: 96
+    fmtp: "profile-level-id=42e01f;packetization-mode=1;level-asymmetry-allowed=1"
+    description: "H264 via RTP push"
+    default_width: 640
+    default_height: 480
+    default_fps: 15
+    default_bitrate_kbps: 900
+    default_gop: 15
+    default_pix_fmt: yuyv422
+    default_preset: veryfast
+    default_tune: zerolatency
+    default_snapshot_fps: 1
+    default_stale_threshold: 20
+    default_rotation: 0       # 0|90|180|270 — applied via ffmpeg transpose, runtime-tunable
+  cam-depth:
+    instance: cam-depth
+    block_name: depth-rtp
+    rtp_port: 5006
+    rtcp_port: 5007
+    mountpoint_id: 1306
+    codec: h264
+    payload_type: 96
+    fmtp: "profile-level-id=42e01f;packetization-mode=1;level-asymmetry-allowed=1"
+    description: "RealSense depth (colorized Z16 → RGB → H264)"
+  cam-ir1:
+    instance: cam-ir1
+    block_name: ir1-rtp
+    rtp_port: 5008
+    rtcp_port: 5009
+    mountpoint_id: 1307
+    codec: h264
+    payload_type: 96
+    fmtp: "profile-level-id=42e01f;packetization-mode=1;level-asymmetry-allowed=1"
+    description: "RealSense IR left (Y8 → H264)"
+  cam-ir2:
+    instance: cam-ir2
+    block_name: ir2-rtp
+    rtp_port: 5010
+    rtcp_port: 5011
+    mountpoint_id: 1308
+    codec: h264
+    payload_type: 96
+    fmtp: "profile-level-id=42e01f;packetization-mode=1;level-asymmetry-allowed=1"
+    description: "RealSense IR right (Y8 → H264)"
+# NOTE: per-camera mountpoint `secret` лежит в secrets.yml `cameras_secrets[name]` (gitignored).
+#       Это разделение: structural data → group_vars, secrets → secrets.yml.
+
+# NOTE: janus_streaming_admin_key теперь в secrets.yml (rotated, было "stream-admin-123").

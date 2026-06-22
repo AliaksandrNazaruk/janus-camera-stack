@@ -1,0 +1,10 @@
+# Generated from instance cam-rgb — DO NOT EDIT MANUALLY.
+# See camera_bringup/instances/cam-rgb.toml + InstanceSpec.render_udev_rule().
+# Auto-installed by camera_bringup apply --only udev.
+SUBSYSTEM=="video4linux", KERNEL=="video*", \
+  ENV{ID_VENDOR_ID}=="8086", ENV{ID_MODEL_ID}=="0b3a", ENV{ID_USB_INTERFACE_NUM}=="03", \
+  ENV{ID_V4L_CAPABILITIES}==":capture:", \
+  KERNELS=="2-2", \
+  SYMLINK+="cam-rgb", \
+  ENV{SYSTEMD_ALIAS}="/dev/cam-rgb", \
+  TAG+="systemd"

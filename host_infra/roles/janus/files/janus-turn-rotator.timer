@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily check + rotate Janus TURN credentials (если expiry близок)
+
+[Timer]
+# Run раз в день. Скрипт сам decides rotate или noop based on expiry.
+OnCalendar=daily
+# При первом старте после boot — wait 5 min для stabilization
+OnBootSec=5min
+# Если miss'нули timer event (host был off) — run при следующем старте
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

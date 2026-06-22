@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin config — {{ cam_type }}</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/camera_config.css?v=3">
+  <style nonce="{{ style_nonce }}">
+    .danger { color: #b91c1c; font-weight: 600; }
+    .ok { color: #15803d; font-weight: 600; }
+    .muted { color: #64748b; font-size: 0.9em; }
+    .secret-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .secret-key { flex: 0 0 220px; font-family: monospace; font-size: 13px; }
+    .secret-mask { flex: 1; font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; min-width: 200px; }
+    .secret-age { flex: 0 0 100px; font-size: 12px; color: #64748b; }
+    .secret-actions { flex: 0 0 auto; display: flex; gap: 6px; }
+    .secret-actions button { padding: 4px 10px; font-size: 12px; }
+    .warning-bar { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px; margin: 12px 0; border-radius: 4px; }
+    .toolbar { margin-top: 20px; display: flex; gap: 10px; align-items: center; }
+    .toolbar button.primary { background: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .toolbar button.primary:hover { background: #1d4ed8; }
+    .toolbar button.primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    #revealModal, #applyModal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+    #revealModal .modal-box, #applyModal .modal-box { background: white; padding: 24px; border-radius: 8px; max-width: 500px; }
+    .modal-box pre { background: #f1f5f9; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 13px; }
+    .pending-badge { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+  </style>
+</head>
+<body data-cam-type="{{ cam_type }}" data-api-prefix="{{ api_prefix | default('') }}">
+
+  <h1>Admin: configuration & secrets</h1>
+  <p class="subtitle">
+    Live config editor. Rotating a secret invalidates active sessions using it. Apply re-renders Janus jcfg + restarts Janus + relay.
+    <br>
+    <a href="/console.html">→ Console</a> &nbsp;·&nbsp; <a href="/camera_hosts.html">→ Camera Hosts</a>
+  </p>
+
+  <div id="status" class="info">Loading…</div>
+
+  <div class="warning-bar">
+    <strong>⚠ Production stack:</strong> changes take effect after <b>Apply</b>. Apply restarts Janus (kills WebRTC sessions ~3 sec) and the textroom relay.
+  </div>
+
+  <fieldset>
+    <legend>Janus / NAT</legend>
+    <div class="row">
+      <label for="natMapping">nat_1_1_mapping (public IP)</label>
+      <input type="text" id="natMapping" placeholder="e.g. 203.0.113.42" style="width: 200px;">
+      <button type="button" id="detectIpBtn" class="secondary">Detect via STUN</button>
+      <button type="button" id="setNatBtn">Save IP</button>
+      <span id="natStatus" class="muted"></span>
+    </div>
+    <div class="row">
+      <label>ICE iface</label>
+      <span class="muted" id="iceIface">(detecting…)</span>
+    </div>
+    <div class="row">
+      <label>Janus config dir</label>
+      <code id="janusCfgDir" class="muted"></code>
+    </div>
+    <div class="row">
+      <label>Services</label>
+      <span id="serviceStatus" class="muted"></span>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Secrets <span class="muted">— last rotation tracked in /etc/robot/.camera-secrets.timestamps</span></legend>
+    <div id="secretsList">
+      <p class="muted">Loading…</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>TURN config (non-secret)</legend>
+    <div class="row">
+      <label for="turnHost">TURN_HOST</label>
+      <input type="text" id="turnHost" placeholder="e.g. turn.example.com">
+      <button type="button" data-field="TURN_HOST" class="set-field-btn">Save</button>
+    </div>
+    <div class="row">
+      <label for="turnRealm">TURN_REALM</label>
+      <input type="text" id="turnRealm" placeholder="e.g. example.com">
+      <button type="button" data-field="TURN_REALM" class="set-field-btn">Save</button>
+    </div>
+  </fieldset>
+
+  <div class="toolbar">
+    <button type="button" id="refreshBtn">Refresh</button>
+    <button type="button" id="applyBtn" class="primary">Apply + Restart services</button>
+    <span id="applyHint" class="muted"></span>
+  </div>
+
+  <!-- Reveal modal (shows secret value once) -->
+  <div id="revealModal">
+    <div class="modal-box">
+      <h3>Secret value</h3>
+      <p class="muted">Copy now — on close, it is masked in the UI again.</p>
+      <pre id="revealValue"></pre>
+      <p class="muted">Audit logged. Apply required for rotated secrets to take effect.</p>
+      <button type="button" id="revealClose">Close</button>
+    </div>
+  </div>
+
+  <!-- Apply confirmation -->
+  <div id="applyModal">
+    <div class="modal-box">
+      <h3>Confirm: Apply + Restart</h3>
+      <p>This will:</p>
+      <ul>
+        <li>Re-render Janus jcfg files with current secrets</li>
+        <li>Restart janus.service (~3 sec WebRTC pause)</li>
+        <li>Restart textroom relay</li>
+      </ul>
+      <p class="danger">Active WebRTC sessions will be killed.</p>
+      <div style="margin-top: 16px; display: flex; gap: 10px;">
+        <button type="button" id="applyConfirm" class="primary">Apply now</button>
+        <button type="button" id="applyCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/console_lib.js?v=1" nonce="{{ script_nonce }}"></script>
+  <script src="/static/js/admin_config.js?v=2" nonce="{{ script_nonce }}"></script>
+</body>
+</html>

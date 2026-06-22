@@ -1,0 +1,125 @@
+# camera_bringup package metadata.
+#
+# Note on Python version: this package targets >=3.10 for L0 standalone
+# compatibility (older RPi OS images may still have 3.10). The top-level
+# mono-repo pyproject.toml requires >=3.12 — на shared runtime окружения
+# that's the effective floor. Mypy config below (python_version = "3.10")
+# matches the LOOSER target for type-checking source compatibility.
+[project]
+name = "camera_bringup"
+version = "1.0.0"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "integration: requires real camera/system access (skip in CI without hardware)",
+    "fitness: architectural conformance check (cheap, must always pass)",
+    "destructive: modifies system state (skip unless explicitly enabled)",
+    "benchmark: performance benchmark (run separately, slower)",
+]
+
+# ── Coverage configuration ─────────────────────────────────────────
+# Run: pytest --cov=camera_bringup --cov-branch --cov-report=html
+
+[tool.coverage.run]
+source = ["camera_bringup"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/.venv/*",
+    "*/.pause-state/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+# Fail CI если coverage упал ниже:
+fail_under = 75
+show_missing = true
+skip_covered = false
+
+# ── Ruff lint + format ─────────────────────────────────────────────
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    ".venv",
+    ".pause-state",
+    "fixtures",
+    "SBOM.json",
+]
+
+[tool.ruff.lint]
+# Включаем: pycodestyle, pyflakes, isort, bugbear, builtins, comprehensions,
+# implicit-str-concat, list-flatten, type-checking, pylint subset
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "B",     # bugbear
+    "C4",    # comprehensions
+    "ISC",   # implicit-str-concat
+    "PIE",   # misc improvements
+    "RUF",   # ruff-specific
+    "UP",    # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (handle через formatter)
+    "B008",   # do not perform function call in argument defaults
+    "ISC001", # implicit str concat (collides with formatter)
+    # Ambiguous-unicode warnings — false positive для русских docstrings/comments
+    "RUF001", # ambiguous-unicode-character-string
+    "RUF002", # ambiguous-unicode-character-docstring
+    "RUF003", # ambiguous-unicode-character-comment
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "B017",   # pytest.raises(Exception) — иногда legit в тестах
+    "PIE",    # tests часто имеют unusual patterns
+]
+
+# ── mypy strict typing ─────────────────────────────────────────────
+
+[tool.mypy]
+python_version = "3.10"
+strict = false                # начинаем с non-strict, gradual tightening
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_return_any = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_calls = false      # 3rd party libs (pyrealsense2) un-typed
+disallow_untyped_defs = false       # legacy code, gradual migration
+disallow_incomplete_defs = true
+files = ["camera_bringup"]
+exclude = [
+    "\\.venv",
+    "\\.pause-state",
+    "tests",                        # tests часто использует duck typing
+]
+
+[[tool.mypy.overrides]]
+module = ["pyrealsense2"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["camera_bringup.tests.*"]
+ignore_errors = true

@@ -1,0 +1,18 @@
+{
+  "_comment": "Operator-managed back-channel topic routing for janus_camera_page textroom_relay. Robot-specific topics (joystick, mission_control, etc.) live HERE, not in stack code — the generic stack simply forwards messages to declared sinks. Deploy to /etc/robot/back-channel-topics.json.",
+  "topics": {
+    "joystick": {
+      "_comment": "Robot teleop input — fire-and-forget. Robot service (port 8110) consumes axes/buttons frames.",
+      "sink_url": "http://127.0.0.1:8110/joystick/frame",
+      "rate_limit_hz": 60,
+      "validate_schema": "raw",
+      "dedupe_ts": true
+    },
+    "_example_mission_command": {
+      "sink_url": "http://127.0.0.1:8110/mission/command",
+      "rate_limit_hz": 10,
+      "validate_schema": "raw",
+      "dedupe_ts": false
+    }
+  }
+}

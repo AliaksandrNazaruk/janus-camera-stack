@@ -1,0 +1,35 @@
+[Unit]
+Description=RealSense multi-sensor mux (depth+IR1+IR2 → FIFOs)
+After=network.target
+Documentation=https://github.com/IntelRealSense/librealsense
+# Boot/USB-enumeration tolerance: D435i может enumerate медленно после reboot
+# или USB replug. mux сам ждёт device (см. _wait_for_device в realsense-mux.py),
+# но если падает — нужен запас restart'ов чтобы не залочиться в failed state.
+StartLimitIntervalSec=300
+StartLimitBurst=20
+
+[Service]
+Type=simple
+# RS_ENABLE_COLOR=1 + RS_OUTPUT_ROTATION_DEG живут здесь (Phase 2 color via mux).
+# '-' prefix = optional (mux работает depth-only если файла нет).
+EnvironmentFile=-/etc/robot/rs-mux.env
+# Run as boris (matches the user that owns /run/realsense, has video group)
+User=boris
+SupplementaryGroups=video
+WorkingDirectory=/run
+# Ensure FIFO dir exists с right ownership before mux starts.
+# RuntimeDirectory creates /run/realsense с mode 0775 на каждом start'е.
+RuntimeDirectory=realsense
+RuntimeDirectoryMode=0775
+ExecStart=/opt/janus-camera-page/.venv/bin/python /usr/local/bin/realsense-mux.py
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=10
+SendSIGKILL=yes
+MemoryMax=512M
+# Не enable'ить by default — reconciler/dashboard управляет lifecycle.
+# Phase 2: produces color (RS_ENABLE_COLOR=1) + depth/IR — single producer.
+
+[Install]
+WantedBy=multi-user.target

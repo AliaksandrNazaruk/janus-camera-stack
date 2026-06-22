@@ -1,0 +1,55 @@
+name: Feature Request
+description: Propose a new feature or enhancement
+title: "[Feature] "
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Lead with the use case, not the proposed solution.
+      placeholder: |
+        I have N security cameras over RTSP and want to monitor them through one
+        dashboard, but currently each requires manual mountpoint provisioning...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What would you build / change? Reference specific files if you've scoped it.
+      placeholder: |
+        Add bulk-provisioning endpoint POST /api/v1/<cam>/sensors/bulk
+        that accepts an array and provisions each in parallel...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you think about, and why are they worse?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - L0 (encoder / hardware adapter)
+        - L1 (mountpoint allocator)
+        - L2 (sensor lifecycle)
+        - L3 (Janus orchestration)
+        - L4 (FastAPI dashboard / API)
+        - Frontend (browser client)
+        - Documentation
+        - Deployment (Docker / k8s / Helm)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: extras
+    attributes:
+      label: Anything else?
+      description: Mockups, screenshots, related issues.

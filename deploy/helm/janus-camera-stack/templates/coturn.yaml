@@ -1,0 +1,45 @@
+{{- if .Values.coturn.enabled -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: coturn
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "stack.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: coturn
+  template:
+    metadata:
+      labels:
+        app: coturn
+        {{- include "stack.labels" . | nindent 8 }}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- with .Values.coturn.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: coturn
+          image: "{{ .Values.coturn.image.repository }}:{{ .Values.coturn.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          args:
+            - "-n"
+            - "--log-file=stdout"
+            - "--listening-port=3478"
+            - "--tls-listening-port=5349"
+            - "--use-auth-secret"
+            - "--static-auth-secret=$(TURN_SECRET)"
+            - "--realm={{ .Values.coturn.realm }}"
+            - "--no-cli"
+            - "--no-multicast-peers"
+            - "--min-port={{ .Values.coturn.minPort }}"
+            - "--max-port={{ .Values.coturn.maxPort }}"
+          env:
+            - name: TURN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "stack.secretName" . }}
+                  key: TURN_SECRET
+{{- end }}

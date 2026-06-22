@@ -1,0 +1,88 @@
+# L4 FastAPI dashboard — stateless apart from small audit log.
+# Single replica for now (in-process state: rate limiter, recovery counters).
+# Multi-replica future: extract state to Redis/etcd, lift to >=2.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camera-page
+  namespace: janus-camera-stack
+  labels:
+    app: camera-page
+    component: l4-dashboard
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate     # singleton state — no rolling update overlap
+  selector:
+    matchLabels:
+      app: camera-page
+  template:
+    metadata:
+      labels:
+        app: camera-page
+        component: l4-dashboard
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: camera-page
+          image: ghcr.io/YOUR_ORG/janus-camera-page:latest   # operator overrides via Kustomize/Helm
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8900
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: camera-page-config
+            - secretRef:
+                name: camera-page-secrets
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/robot
+            - name: plugins
+              mountPath: /etc/robot/plugins.d
+              readOnly: true
+      volumes:
+        - name: state
+          emptyDir: {}    # FDIR persistence — losing on restart is acceptable
+        - name: plugins
+          configMap:
+            name: camera-page-plugins
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: camera-page
+  namespace: janus-camera-stack
+spec:
+  type: ClusterIP
+  selector:
+    app: camera-page
+  ports:
+    - name: http
+      port: 8900
+      targetPort: http

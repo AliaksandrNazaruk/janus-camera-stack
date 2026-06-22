@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gateway Operator Console</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <!-- Design-system foundations (self-hosted; tokens @imported from styles.css). -->
+  <link rel="stylesheet" href="/static/console/styles.css?v={{ asset_v }}">
+  <style nonce="{{ style_nonce }}">
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-body); -webkit-font-smoothing: antialiased; }
+    @keyframes gc-spin { to { transform: rotate(360deg); } }
+    @keyframes gc-pulse { 0% { opacity: 1; } 70% { opacity: 0.5; } 100% { opacity: 1; } }
+    @keyframes gc-slidein { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes gc-pop { from { transform: scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 999px; border: 2px solid var(--surface-app); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- CSP-safe: every script is a self-hosted file (no CDN, no babel-in-browser).
+       JSX is precompiled (scripts/build_console.sh). Load order matters:
+       React → ds_bundle (components) → view-model → shell/screens → app (mounts). -->
+  <script src="/static/console/vendor/react.production.min.js?v={{ asset_v }}"></script>
+  <script src="/static/console/vendor/react-dom.production.min.js?v={{ asset_v }}"></script>
+  <script src="/static/console/vendor/lucide.min.js?v={{ asset_v }}"></script>
+  <!-- React-safe icon renderer: render Lucide SVGs INTO <i data-lucide> instead of
+       replacing them, so React's reconcile never hits a removed node. After lucide. -->
+  <script src="/static/console/console_icons.js?v={{ asset_v }}"></script>
+  <script src="/static/console/ds_bundle.js?v={{ asset_v }}"></script>
+  <!-- ConsoleLib: X-Admin-Token auth for the live /api/v1/ui/fleet + /api/v1/admin/* calls. -->
+  <script src="/static/js/console_lib.js?v={{ asset_v }}"></script>
+  <script src="/static/console/shell.js?v={{ asset_v }}"></script>
+  <script src="/static/console/screens.js?v={{ asset_v }}"></script>
+  <script src="/static/console/app.js?v={{ asset_v }}"></script>
+</body>
+</html>

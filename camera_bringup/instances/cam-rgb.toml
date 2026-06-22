@@ -1,0 +1,28 @@
+# Instance: cam-rgb (default, текущая камера на узле .10)
+#
+# Это первая instance L0-template. Описывает Intel RealSense D435i, используется
+# только RGB-сенсор (interface 03). Зафиксирован на USB port 2-2 (для будущего
+# multi-camera setup — порт-based discriminator между двумя D435i).
+
+instance_id = "cam-rgb"
+friendly_name = "Color camera (D435i RGB sensor) on node .10"
+location = "front"
+
+[hardware]
+usb_vendor_id = "8086"
+usb_product_id = "0b3a"
+usb_interface_num = "03"             # RGB capture interface
+usb_port_hint = "2-2"                # текущий physical port
+expected_serial = "141722072135"     # из fingerprint baseline
+
+[stream]
+pixel_format = "YUYV"
+width = 640
+height = 480
+fps = 15
+
+[firmware]
+min_bcd = 5100                       # ≥ 5.13.0.0
+
+[dev]
+symlink_name = "cam-rgb"             # создаст /dev/cam-rgb

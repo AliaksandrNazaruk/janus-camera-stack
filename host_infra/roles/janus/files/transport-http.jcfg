@@ -1,0 +1,27 @@
+general: {
+  enabled = true
+  json = "indented"
+  base_path = "/janus"
+  http = true
+  port = 8088
+  ip = "0.0.0.0"
+  https = false
+}
+
+admin: {
+  admin_http = true
+  admin_port = 7088
+  admin_ip   = "127.0.0.1"      # ← localhost only. Admin API exposes server_info
+                                #    без auth. L4 + admin CLIs всё runs локально —
+                                #    no external admin access needed.
+  admin_https = false
+  admin_ws      = false
+  admin_ws_port = 7089
+  admin_ws_ip   = "127.0.0.1"   # ← same reasoning для WebSocket admin
+  admin_wss     = false
+}
+
+cors: {
+  #allow_origin = "*"
+  #enforce_cors = false
+}

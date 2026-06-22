@@ -1,0 +1,114 @@
+---
+# iptables MASQUERADE для camera LAN ({{ camera_lan_subnet }} → uplink).
+# Заменяет manual `/etc/robot/firewall-color.sh` script + `camera-nat.service`.
+#
+# SAFETY: используем `ansible.builtin.iptables` (idempotent), и persist через
+# iptables-persistent пакет. НЕ flush'им другие rules (только наши добавляем).
+
+- name: Install iptables-persistent (для survive reboot)
+  ansible.builtin.apt:
+    name: iptables-persistent
+    state: present
+    cache_valid_time: 3600
+  register: iptables_persistent_install
+
+# camera-nat.service дублирует то что Ansible теперь делает (sysctl + iptables).
+# Disable чтобы не было дубликатов при reboot (он добавит unmarked MASQUERADE).
+- name: Disable legacy camera-nat.service (Ansible теперь owns NAT/sysctl)
+  ansible.builtin.systemd:
+    name: camera-nat.service
+    state: stopped
+    enabled: no
+  failed_when: false   # service может не существовать на других hosts
+
+# Note: legacy unmarked duplicate (от camera-nat.service) удаляется ВРУЧНУЮ
+# одноразово (`iptables -D POSTROUTING N` где N — line с unmarked). Ansible не
+# может distinguish unmarked vs marked rule (его iptables module не filter by comment).
+# При следующих apply Ansible видит свой marked rule и НЕ создаёт duplicate.
+
+- name: Ensure NAT POSTROUTING MASQUERADE для {{ camera_lan_subnet }}
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ camera_lan_subnet }}"
+    out_interface: "{{ camera_uplink_iface }}"
+    jump: MASQUERADE
+    comment: "host_infra: camera LAN → uplink (managed by Ansible)"
+    action: append
+    state: present
+  notify: persist iptables
+
+- name: Ensure FORWARD {{ camera_lan_bridge }} → {{ camera_uplink_iface }}
+  ansible.builtin.iptables:
+    chain: FORWARD
+    in_interface: "{{ camera_lan_bridge }}"
+    out_interface: "{{ camera_uplink_iface }}"
+    jump: ACCEPT
+    comment: "host_infra: outbound from camera LAN"
+    action: append
+    state: present
+  notify: persist iptables
+
+- name: Ensure FORWARD return (ESTABLISHED/RELATED)
+  ansible.builtin.iptables:
+    chain: FORWARD
+    in_interface: "{{ camera_uplink_iface }}"
+    out_interface: "{{ camera_lan_bridge }}"
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    comment: "host_infra: return traffic для camera LAN"
+    action: append
+    state: present
+  notify: persist iptables
+
+# ── A2 hardening: Janus control-plane ports are localhost-only ──────────────
+# Janus HTTP (8088), WebSocket (8188) and ADMIN (7088) must NOT be reachable
+# from the LAN or internet — the browser reaches Janus only through the L4
+# /janus + /janus-ws proxies, and L4 + the encoders talk to Janus over loopback.
+# Without this they bind 0.0.0.0 and a broad `ACCEPT --dport 8088/8188` left
+# them open on the LAN (found during A2 — the rule was manual, not in IaC =
+# config drift). G2-sec adds 7088 (admin API exposes server_info): the live jcfg
+# already binds admin to 127.0.0.1, but the firewall DROP is belt-and-suspenders
+# so a future jcfg regression cannot re-expose the admin plane.
+#
+# Posture: ACCEPT on loopback, DROP everything else, INSERTED above the old broad
+# ACCEPT (which becomes dead/shadowed, exactly like the runtime A2 fix). This
+# mirrors the live rules already applied; `persist iptables` writes them to
+# /etc/iptables/rules.v4 so they survive re-provision.
+#
+# ORDER MATTERS: with `action: insert` the LAST task inserted ends up on top, so
+# the DROP tasks run FIRST and the loopback-ACCEPT tasks run SECOND — leaving
+# ACCEPT(lo) ABOVE DROP for each port. Verify after apply:
+#   iptables -L INPUT -n -v --line-numbers | grep -E '8088|8188'
+# APPLY IN A MAINTENANCE WINDOW: run `--check` first, then for real; a wrong
+# order would drop L4→Janus loopback traffic and interrupt the stream.
+- name: "A2: drop Janus control ports from non-loopback (inserted first → ends below ACCEPT)"
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: DROP
+    comment: "host_infra A2: janus {{ item }} deny non-local"
+    action: insert
+    state: present
+  loop:
+    - "8088"
+    - "8188"
+    - "7088"
+  notify: persist iptables
+
+- name: "A2: allow Janus control ports on loopback only (inserted last → ends on top)"
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ item }}"
+    in_interface: lo
+    jump: ACCEPT
+    comment: "host_infra A2: janus {{ item }} localhost allow"
+    action: insert
+    state: present
+  loop:
+    - "8088"
+    - "8188"
+    - "7088"
+  notify: persist iptables

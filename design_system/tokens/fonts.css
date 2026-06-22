@@ -1,0 +1,7 @@
+/* Webfonts — IBM Plex Sans (UI) + IBM Plex Mono (technical values).
+ * The source console used the system-ui stack; for the elevated operator
+ * console we standardize on IBM Plex — an engineering/industrial typeface
+ * family designed for control interfaces, with a tightly-matched mono.
+ * Loaded from Google Fonts at runtime. Self-host the woff2 for production.
+ */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");

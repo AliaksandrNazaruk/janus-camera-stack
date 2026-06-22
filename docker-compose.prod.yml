@@ -1,0 +1,123 @@
+# Production docker-compose: full stack for single-host cloud deploy.
+#
+# Brings up:
+#   - janus-camera-page (L4 FastAPI)  → http://HOST:8900
+#   - janus              (WebRTC SFU) → ws://HOST:8188, http://HOST:8088
+#   - coturn             (TURN/STUN)  → udp://HOST:3478
+#   - prometheus + grafana (observability) → http://HOST:9090, :3000
+#
+# NOT included (must run on edge node with camera hardware):
+#   - rtp-rgb / rtp-v4l2 / rtp-rtsp encoders
+#   - realsense-mux
+#
+# For edge nodes, see docs/DEPLOYMENT.md "Encoder node" section. Edge node
+# pushes RTP to THIS_HOST:5004-5099 over WireGuard / Tailscale overlay.
+#
+# Quickstart:
+#   1. cp infrastructure/secrets.env.example .env
+#   2. Edit .env (especially TURN_SECRET, INTERNAL_API_SECRET, GRAFANA_PASS)
+#   3. docker compose -f docker-compose.prod.yml up -d
+#   4. Browse http://HOST:8900/color_camera
+#
+# TLS termination: put nginx/Caddy/Traefik in front. WebRTC requires HTTPS
+# for getUserMedia + secure context. See deploy/k8s/40-ingress.yaml for
+# k8s example, OR add reverse-proxy service here for Docker.
+
+services:
+  janus-camera-page:
+    build:
+      context: ..
+      dockerfile: janus_camera_page/Dockerfile
+    image: janus-camera-page:prod
+    container_name: janus-camera-page
+    environment:
+      CAM_TYPE: ${CAMERA_TYPE:-color_camera}
+      PORT: 8900
+      JANUS_URL: http://janus:8088/janus
+      JANUS_HTTP: http://janus:8088
+      JANUS_WS_URL_1: ws://janus:8188/janus-ws
+      JANUS_ADMIN_URL: http://janus:7088/admin
+      JANUS_ADMIN_SECRET: ${JANUS_ADMIN_SECRET:?must set}
+      TURN_HOST: ${TURN_PUBLIC_HOST:?must set}
+      TURN_SHARED_SECRET: ${TURN_SECRET:?must set}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?must set}
+      RELAY_URL: http://textroom-relay:8910
+      STACK_DEFAULT_JOYSTICK_MODE: "off"
+      SENSOR_PLUGIN_DIR: /etc/robot/plugins.d
+    volumes:
+      - ./plugins.d:/etc/robot/plugins.d:ro
+      - app-state:/var/lib/robot
+    ports:
+      - "8900:8900"
+    depends_on:
+      janus:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8900/livez"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  janus:
+    # Community-built Janus image. Pin to specific SHA for reproducibility.
+    # Alternative: build from source with our jcfg (see deploy/janus/).
+    image: canyan/janus-gateway:1.2.4
+    container_name: janus
+    network_mode: host
+    volumes:
+      - ./deploy/janus/etc:/usr/local/etc/janus:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8088/janus/info"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: coturn
+    network_mode: host
+    command: >
+      -n --log-file=stdout
+      --listening-port=3478
+      --tls-listening-port=5349
+      --use-auth-secret
+      --static-auth-secret=${TURN_SECRET:?must set}
+      --realm=${TURN_REALM:-cloud.local}
+      --no-cli
+      --no-multicast-peers
+      --min-port=${TURN_MIN_PORT:-49152}
+      --max-port=${TURN_MAX_PORT:-49999}
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS:?must set}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+volumes:
+  app-state:
+  prometheus-data:
+  grafana-data:

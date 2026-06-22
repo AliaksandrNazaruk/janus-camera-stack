@@ -1,0 +1,133 @@
+{{- if .Values.cameraPage.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camera-page-config
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "stack.labels" . | nindent 4 }}
+data:
+  CAMERA_TYPE: {{ .Values.cameraPage.cameraType | quote }}
+  JANUS_API_URL: "http://janus.{{ .Values.namespace }}.svc:8088/janus"
+  JANUS_WS_URL: "ws://janus.{{ .Values.namespace }}.svc:8188"
+  JANUS_ADMIN_URL: "http://janus.{{ .Values.namespace }}.svc:7088/admin"
+  TURN_HOST: {{ .Values.coturn.publicHost | quote }}
+  TURN_REALM: {{ .Values.coturn.realm | quote }}
+  STACK_DEFAULT_JOYSTICK_MODE: {{ .Values.cameraPage.defaultJoystickMode | quote }}
+  SENSOR_PLUGIN_DIR: "/etc/robot/plugins.d"
+---
+{{- if .Values.plugins }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camera-page-plugins
+  namespace: {{ .Values.namespace }}
+data:
+{{- range $name, $body := .Values.plugins }}
+  {{ $name }}: |
+{{ $body | indent 4 }}
+{{- end }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camera-page
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "stack.labels" . | nindent 4 }}
+    app: camera-page
+spec:
+  replicas: {{ .Values.cameraPage.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: camera-page
+  template:
+    metadata:
+      labels:
+        app: camera-page
+        {{- include "stack.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: camera-page
+          image: "{{ .Values.cameraPage.image.repository }}:{{ .Values.cameraPage.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8900
+          envFrom:
+            - configMapRef:
+                name: camera-page-config
+            - secretRef:
+                name: {{ include "stack.secretName" . }}
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources: {{- toYaml .Values.cameraPage.resources | nindent 12 }}
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/robot
+            {{- if .Values.plugins }}
+            - name: plugins
+              mountPath: /etc/robot/plugins.d
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: state
+          emptyDir: {}
+        {{- if .Values.plugins }}
+        - name: plugins
+          configMap:
+            name: camera-page-plugins
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: camera-page
+  namespace: {{ .Values.namespace }}
+  labels: {{- include "stack.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: camera-page
+  ports:
+    - name: http
+      port: 8900
+      targetPort: http
+{{- if .Values.cameraPage.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: camera-page
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+spec:
+  ingressClassName: {{ .Values.cameraPage.ingress.className }}
+  {{- if .Values.cameraPage.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.cameraPage.ingress.host | quote }}]
+      secretName: {{ .Values.cameraPage.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.cameraPage.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: camera-page
+                port:
+                  name: http
+{{- end }}
+{{- end }}

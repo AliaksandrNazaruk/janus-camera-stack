@@ -1,0 +1,22 @@
+[Unit]
+Description=Generic V4L2 %i RTP encoder (H264 via RTP push)
+Documentation=https://github.com/<org>/robot/blob/main/janus_camera_page/docs/ADAPTERS.md
+After=network.target
+StartLimitIntervalSec=300
+StartLimitBurst=15
+
+[Service]
+Type=simple
+User=boris
+SupplementaryGroups=video
+ExecStart=/usr/local/bin/rtp-v4l2.sh %i
+Restart=always
+RestartSec=2
+KillSignal=SIGTERM
+TimeoutStopSec=5
+SendSIGKILL=yes
+SuccessExitStatus=143 255 SIGTERM
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,43 @@
+# janus.plugin.streaming — runtime config rendered by install.sh.
+# Operator MAY edit, but installer overwrites on re-run unless --skip-janus-configs.
+#
+# Two parts:
+#   general — plugin-wide settings, including admin_key for dynamic mountpoint
+#             creation via Janus admin API (used by camera-page L4 lifecycle)
+#   rgb-rtp — example static mountpoint for color RGB stream (D435i on default
+#             setup). Comment out if using only dynamic mountpoints.
+
+general :
+{
+  enabled = "true";
+  json = "true";
+  load_all = "true";
+  configs_folder = "@JANUS_CFG_DIR@/streams.d";
+  allow_persistent = "true";
+  admin_key = "@STREAMING_ADMIN_KEY@";
+};
+
+rgb-rtp : {
+    type = "rtp";
+    id = "1305";
+    description = "H264 via RTP push (default color camera mountpoint)";
+    secret = "@STREAMING_RGB_MP_SECRET@";
+
+    videobitrate = 0
+    videobufferkf = true
+    videosimulcast = false
+
+    media = (
+        {
+            type = "video";
+            mid = "v";
+            label = "video";
+            port = "5004";
+            rtcpport = "5005";
+            pt = "96";
+            codec = "h264"
+            fmtp = "profile-level-id=42e01f;packetization-mode=1;level-asymmetry-allowed=1";
+            iface = "127.0.0.1";
+        }
+    );
+};

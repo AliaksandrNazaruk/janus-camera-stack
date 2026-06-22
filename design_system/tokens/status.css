@@ -1,0 +1,36 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * STATUS MODEL — Gateway Console
+ * The operator console has ONE canonical status vocabulary. Every node, stream,
+ * FDIR and firewall state maps onto exactly one of five families. Each family
+ * carries a fill (-bg), text (-fg), solid dot/accent (-solid) and border token.
+ *
+ *   ok    → green   · online / synced / healthy / ready / active
+ *   warn  → amber   · degraded / waiting / stale / drift / warning
+ *   bad   → red     · failed / stopped / unreachable / blocked / critical
+ *   idle  → gray    · offline / disabled / unknown / configured_offline
+ *   busy  → blue    · provisioning / recovering / maintenance / pending
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --status-ok-bg:     var(--green-100);  --status-ok-fg:   var(--green-800);
+  --status-ok-solid:  var(--green-600);  --status-ok-border: #bbf7d0;
+
+  --status-warn-bg:   var(--amber-100);  --status-warn-fg: var(--amber-800);
+  --status-warn-solid:var(--amber-500);  --status-warn-border: #fde68a;
+
+  --status-bad-bg:    var(--red-100);    --status-bad-fg:  var(--red-800);
+  --status-bad-solid: var(--red-600);    --status-bad-border: #fecaca;
+
+  --status-idle-bg:   var(--slate-100);  --status-idle-fg: var(--slate-500);
+  --status-idle-solid:var(--slate-400);  --status-idle-border: var(--slate-200);
+
+  --status-busy-bg:   var(--blue-100);   --status-busy-fg: var(--blue-800);
+  --status-busy-solid:var(--blue-600);   --status-busy-border: var(--blue-200);
+
+  /* ─ Alert severity (global alert bar + alert list) ────────────────────── */
+  --alert-critical-bg: var(--red-50);    --alert-critical-fg: var(--red-700);
+  --alert-critical-accent: var(--red-600);
+  --alert-warning-bg:  var(--amber-50);  --alert-warning-fg:  var(--amber-800);
+  --alert-warning-accent: var(--amber-500);
+  --alert-info-bg:     var(--blue-50);   --alert-info-fg:     var(--blue-800);
+  --alert-info-accent: var(--blue-600);
+}

@@ -1,0 +1,23 @@
+# janus.plugin.textroom — back-channel DataChannel rooms.
+# Rendered by install.sh. Substitutes: @TEXTROOM_ROOM_SECRET@, @RELAY_PORT@
+#
+# Stack uses textroom (NOT WebRTC peer connections) for bidirectional
+# control/telemetry data — joystick frames, depth queries, plugin events.
+# The post-hook URL points to a textroom_relay sidecar that translates events
+# to topic-based pub/sub routing for L4 consumers.
+
+general: {
+    #admin_key = "supersecret"
+    json = "indented"
+    events = true
+    #string_ids = true      # off — using numeric ID 1000 as default room
+}
+
+room-1000: {
+    description = "Default DataChannel back-channel room"
+    is_private  = true
+    secret      = "@TEXTROOM_ROOM_SECRET@"
+    # pin       = "roompwd"        # uncomment to require room password
+    history     = 0
+    post        = "http://127.0.0.1:@RELAY_PORT@/textroom-hook"
+}

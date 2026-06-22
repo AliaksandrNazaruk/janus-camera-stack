@@ -1,0 +1,52 @@
+# Pre-commit hooks для camera_bringup L0.
+# Install: pip install pre-commit && pre-commit install
+# Run on all files: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # ruff: scoped к camera_bringup/ через explicit pyproject path
+  # (если global ruff видит много pyproject.toml в monorepo — может расползтись)
+  - repo: local
+    hooks:
+      - id: ruff-scoped
+        name: ruff (camera_bringup only)
+        entry: bash camera_bringup/scripts/lint.sh --fix
+        language: system
+        files: ^camera_bringup/.*\.py$
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: []
+        args: [--config-file=pyproject.toml]
+        files: ^camera_bringup/
+
+  # Local hook — fitness tests (быстрые, должны быть зелёными перед commit)
+  - repo: local
+    hooks:
+      - id: fitness-tests
+        name: fitness tests (architectural conformance)
+        entry: python3 -m pytest camera_bringup/tests/fitness/ -q --tb=line
+        language: system
+        pass_filenames: false
+        files: ^camera_bringup/
+
+      - id: sbom
+        name: regenerate SBOM if requirements changed
+        entry: bash camera_bringup/scripts/generate_sbom.sh
+        language: system
+        pass_filenames: false
+        files: ^camera_bringup/requirements\.txt$

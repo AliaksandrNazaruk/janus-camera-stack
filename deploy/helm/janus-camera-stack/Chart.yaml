@@ -1,0 +1,20 @@
+apiVersion: v2
+name: janus-camera-stack
+description: |
+  Generic WebRTC video streaming stack: FastAPI L4 dashboard + Janus Gateway
+  SFU + coturn TURN relay. Stack accepts RTP from edge encoder nodes (any
+  format — V4L2 webcam, RTSP IP camera, RealSense depth, ffmpeg testsrc).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/YOUR_ORG/janus-camera-page
+keywords:
+  - webrtc
+  - streaming
+  - janus
+  - camera
+  - video
+maintainers:
+  - name: YOUR_ORG
+sources:
+  - https://github.com/YOUR_ORG/janus-camera-page

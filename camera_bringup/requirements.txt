@@ -1,0 +1,16 @@
+# L0 camera_bringup — pure-Python dependencies (hardware-independent).
+#
+# These deps are safe to install в clean-room reviewer environments.
+# Unit tests под tests/unit/ don't import pyrealsense2 (verified via grep).
+#
+# Hardware-specific deps (pyrealsense2 native binary wheel — Python-version
+# pinned hashes) live separately: requirements-hardware.txt.
+#
+# Install для clean-room review:
+#   pip install -r requirements.txt
+#
+# Install для production deploy (with hardware):
+#   pip install -r requirements.txt -r requirements-hardware.txt
+#
+# Note: currently L0 package itself uses ONLY stdlib (no runtime deps), so
+# this file is empty. Kept as marker that hardware deps live elsewhere.

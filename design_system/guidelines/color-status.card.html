@@ -1,0 +1,43 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Status Families" subtitle="Five canonical families — every node/stream/FDIR/firewall state maps here" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-card); color: var(--text-body); }
+  .wrap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 18px; }
+  .fam { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+  .fam .swatch { height: 40px; display: flex; align-items: center; gap: 7px; padding: 0 12px; }
+  .dot { width: 10px; height: 10px; border-radius: var(--radius-pill); }
+  .fam .key { font: var(--weight-bold) var(--text-sm)/1 var(--font-sans); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  .fam .body { padding: 9px 12px 11px; }
+  .fam .states { font: var(--weight-regular) var(--text-2xs)/1.5 var(--font-mono); color: var(--text-muted); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: var(--radius-pill); font: var(--weight-semibold) var(--text-xs)/1 var(--font-sans); margin-bottom: 7px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="fam">
+      <div class="swatch" style="background:var(--status-ok-bg)"><span class="dot" style="background:var(--status-ok-solid)"></span><span class="key" style="color:var(--status-ok-fg)">OK</span></div>
+      <div class="body"><span class="badge" style="background:var(--status-ok-bg);color:var(--status-ok-fg)"><span class="dot" style="background:var(--status-ok-solid)"></span>online</span><div class="states">synced · healthy · ready · active</div></div>
+    </div>
+    <div class="fam">
+      <div class="swatch" style="background:var(--status-warn-bg)"><span class="dot" style="background:var(--status-warn-solid)"></span><span class="key" style="color:var(--status-warn-fg)">WARN</span></div>
+      <div class="body"><span class="badge" style="background:var(--status-warn-bg);color:var(--status-warn-fg)"><span class="dot" style="background:var(--status-warn-solid)"></span>degraded</span><div class="states">waiting · drift · pending</div></div>
+    </div>
+    <div class="fam">
+      <div class="swatch" style="background:var(--status-bad-bg)"><span class="dot" style="background:var(--status-bad-solid)"></span><span class="key" style="color:var(--status-bad-fg)">BAD</span></div>
+      <div class="body"><span class="badge" style="background:var(--status-bad-bg);color:var(--status-bad-fg)"><span class="dot" style="background:var(--status-bad-solid)"></span>stale</span><div class="states">failed · stopped · unreachable</div></div>
+    </div>
+    <div class="fam">
+      <div class="swatch" style="background:var(--status-idle-bg)"><span class="dot" style="background:var(--status-idle-solid)"></span><span class="key" style="color:var(--status-idle-fg)">IDLE</span></div>
+      <div class="body"><span class="badge" style="background:var(--status-idle-bg);color:var(--status-idle-fg)"><span class="dot" style="background:var(--status-idle-solid)"></span>offline</span><div class="states">disabled · unknown</div></div>
+    </div>
+    <div class="fam">
+      <div class="swatch" style="background:var(--status-busy-bg)"><span class="dot" style="background:var(--status-busy-solid)"></span><span class="key" style="color:var(--status-busy-fg)">BUSY</span></div>
+      <div class="body"><span class="badge" style="background:var(--status-busy-bg);color:var(--status-busy-fg)"><span class="dot" style="background:var(--status-busy-solid)"></span>provisioning</span><div class="states">recovering · maintenance</div></div>
+    </div>
+  </div>
+</body>
+</html>

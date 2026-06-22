@@ -1,0 +1,46 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * TYPOGRAPHY — Gateway Console
+ * IBM Plex Sans for UI · IBM Plex Mono for every technical value
+ * (node ids, binding ids, IPs, ports, rtp_age, timestamps, fingerprints).
+ * Mono-for-data is a core brand rule: anything a machine emits is set in mono.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ─ Size scale (console runs dense — 13px base) ───────────────────────── */
+  --text-2xs: 10px;   /* micro-labels inside chips                          */
+  --text-xs:  11px;   /* badge text, metric labels                         */
+  --text-sm:  12px;   /* secondary, table cells, mono values               */
+  --text-base:13px;   /* default UI text                                   */
+  --text-md:  14px;   /* emphasized body, card titles                      */
+  --text-lg:  16px;   /* section headings (h2)                             */
+  --text-xl:  18px;   /* card / drawer titles                             */
+  --text-2xl: 22px;   /* page title (h1)                                  */
+  --text-3xl: 28px;   /* command-center big counts                        */
+  --text-4xl: 36px;   /* hero metric numerals                             */
+
+  /* ─ Weights ───────────────────────────────────────────────────────────── */
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold:600;
+  --weight-bold:    700;
+
+  /* ─ Line heights ─────────────────────────────────────────────────────── */
+  --leading-tight: 1.2;
+  --leading-snug:  1.35;
+  --leading-normal:1.5;
+
+  /* ─ Tracking ─────────────────────────────────────────────────────────── */
+  --tracking-label: 0.06em;  /* uppercase metric labels                     */
+  --tracking-tight: -0.01em; /* large numerals                             */
+
+  /* ─ Semantic roles ───────────────────────────────────────────────────── */
+  --type-page-title:   var(--weight-bold) var(--text-2xl)/var(--leading-tight) var(--font-sans);
+  --type-section:      var(--weight-semibold) var(--text-lg)/var(--leading-snug) var(--font-sans);
+  --type-card-title:   var(--weight-semibold) var(--text-md)/var(--leading-snug) var(--font-sans);
+  --type-body:         var(--weight-regular) var(--text-base)/var(--leading-normal) var(--font-sans);
+  --type-label:        var(--weight-semibold) var(--text-xs)/1 var(--font-sans);
+  --type-mono:         var(--weight-regular) var(--text-sm)/var(--leading-snug) var(--font-mono);
+  --type-mono-strong:  var(--weight-medium) var(--text-sm)/var(--leading-snug) var(--font-mono);
+}

@@ -1,0 +1,248 @@
+<!-- @dsCard group="Operator Console" viewport="1380x900" name="Operator Console" subtitle="Full fleet operations console — Command Center, Nodes, Streams, Viewer Wall, Diagnostics, Settings" -->
+<!-- @startingPoint section="Screens" subtitle="Full camera-fleet operator console shell with 7 sections" viewport="1380x900" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gateway Operator Console</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-body); -webkit-font-smoothing: antialiased; }
+  @keyframes gc-spin { to { transform: rotate(360deg); } }
+  @keyframes gc-pulse { 0% { opacity: 1; } 70% { opacity: 0.5; } 100% { opacity: 1; } }
+  @keyframes gc-slidein { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes gc-pop { from { transform: scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 999px; border: 2px solid var(--surface-app); }
+</style>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#0f172a">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect x="380" y="300" width="440" height="240" rx="36" fill="#2563eb"/>
+    <rect x="470" y="250" width="120" height="70" rx="14" fill="#2563eb"/>
+    <circle cx="600" cy="420" r="78" fill="#0f172a"/>
+    <circle cx="600" cy="420" r="46" fill="#60a5fa"/>
+    <circle cx="600" cy="420" r="20" fill="#0f172a"/>
+    <circle cx="760" cy="350" r="14" fill="#22c55e"/>
+  </svg>
+</template>
+<div id="root"></div>
+<script src="fleet-data.js"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel">
+const C = window.GatewayConsoleDesignSystem_64aa70;
+const { AlertBar, OperationDrawer, ConfirmDialog, ActionButton, StatusBadge } = C;
+const { Sidebar, Topbar, SCREENS } = window;
+
+const TITLES = {
+  command: ["Command Center"], fleet: ["Fleet"], nodes: ["Nodes"], streams: ["Streams"],
+  viewer: ["Viewer Wall"], diagnostics: ["Diagnostics"], settings: ["Settings", "Security"],
+};
+
+/* Operation presets per action */
+function buildOp(kind, target) {
+  const id = target.binding || target.nodeId || "";
+  switch (kind) {
+    case "restart": return { title: `Restart ${id}`, target: id, impactClass: "B", impact: ["Stream reconnects (5–15s)", "Viewers may briefly drop"], fdirNote: "stays enabled", duration: "5–15s", confirmLabel: "Restart" };
+    case "maintenance": return { title: `Maintenance — ${id}`, target: id, impactClass: "B", impact: ["FDIR is suppressed while in maintenance", "Streams keep running"], fdirNote: "suppressed", duration: "instant", confirmLabel: "Enable maintenance" };
+    case "check": return { title: `Check node ${id}`, target: id, impactClass: "A", impact: ["Read-only probe of agent + camera + services"], duration: "2–4s", confirmLabel: "Run check" };
+    case "provision": return { title: `Provision ${id}`, target: id, impactClass: "C", impact: ["Pushes node bundle + token", "rs-stream services restart"], fdirNote: "re-enabled after", duration: "20–40s", confirmLabel: "Provision" };
+    case "rotate": return { title: `Rotate token — ${id}`, target: id, impactClass: "B", impact: ["Issues a new node token", "Old token invalidated immediately"], duration: "instant", confirmLabel: "Rotate token" };
+    default: return null;
+  }
+}
+const OP_STEPS = {
+  restart: ["Request sent", "Node acknowledged", "RTP resumed", "Janus mountpoint online"],
+  maintenance: ["Request sent", "FDIR suppressed", "State persisted"],
+  check: ["Probe agent", "Probe camera", "Probe services"],
+  provision: ["Bundle pushed", "Token issued", "rs-stream restarted", "Mountpoints online"],
+  rotate: ["New token issued", "Old token revoked", "Node re-authenticated"],
+};
+
+/* ── Add-node wizard ───────────────────────────────────────────────────── */
+const WIZ_STEPS = ["Host", "Identity", "Provision", "Streams", "Activate", "Verify"];
+function Wizard({ onClose }) {
+  const [step, setStep] = React.useState(0);
+  React.useEffect(() => { setTimeout(() => window.lucide && window.lucide.createIcons(), 30); });
+  const next = () => setStep((s) => Math.min(s + 1, WIZ_STEPS.length - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
+  const Field = ({ label, value }) => (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <span style={{ font: "var(--type-label)", textTransform: "uppercase", letterSpacing: "var(--tracking-label)", color: "var(--text-muted)" }}>{label}</span>
+      <input defaultValue={value} style={{ font: "var(--type-mono)", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", color: "var(--text-strong)" }} />
+    </label>
+  );
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 240, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "7vh" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--surface-overlay)" }} />
+      <div style={{ position: "relative", width: 620, maxWidth: "94vw", background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-overlay)", overflow: "hidden", animation: "gc-pop 160ms ease" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <i data-lucide="server-cog" style={{ width: 18, height: 18, color: "var(--blue-600)" }} />
+          <span style={{ font: "var(--type-section)", color: "var(--text-strong)" }}>Add node</span>
+          <ActionButton size="xs" variant="ghost" icon="x" style={{ marginLeft: "auto" }} onClick={onClose} />
+        </div>
+        {/* stepper */}
+        <div style={{ display: "flex", gap: 4, padding: "12px 18px", borderBottom: "1px solid var(--border-subtle)" }}>
+          {WIZ_STEPS.map((s, i) => (
+            <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+              <span style={{ width: 20, height: 20, flex: "none", borderRadius: "999px", display: "flex", alignItems: "center", justifyContent: "center", font: "var(--weight-bold) var(--text-2xs)/1 var(--font-mono)",
+                background: i < step ? "var(--status-ok-solid)" : i === step ? "var(--blue-600)" : "var(--surface-sunken)",
+                color: i <= step ? "#fff" : "var(--text-faint)" }}>{i < step ? "✓" : i + 1}</span>
+              <span style={{ font: `${i === step ? "var(--weight-semibold)" : "var(--weight-regular)"} var(--text-2xs)/1.1 var(--font-sans)`, color: i === step ? "var(--text-strong)" : "var(--text-faint)" }}>{s}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "18px", minHeight: 230 }}>
+          {step === 0 && <div style={{ display: "grid", gap: 12 }}>
+            <Field label="Host / IP" value="192.168.1.55" />
+            <Field label="Display name" value="Arm RealSense #1" />
+            <div><ActionButton variant="default" icon="search">Check reachability</ActionButton></div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <StatusBadge family="ok" label="SSH reachable" size="sm" />
+              <StatusBadge family="ok" label="node-agent reachable" size="sm" />
+              <StatusBadge family="warn" label="bootstrap required" size="sm" />
+            </div>
+          </div>}
+          {step === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ font: "var(--type-label)", textTransform: "uppercase", letterSpacing: "var(--tracking-label)", color: "var(--text-muted)" }}>Host key fingerprint</div>
+            <code style={{ font: "var(--type-mono)", background: "var(--surface-sunken)", padding: "10px 12px", borderRadius: "var(--radius-md)", color: "var(--text-strong)" }}>SHA256:8d:f2:a4:1c:9e:00:7b:2f:…:a1</code>
+            <div><ActionButton variant="primary" icon="shield-check">Confirm host key</ActionButton></div>
+          </div>}
+          {step === 2 && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <StatusBadge family="ok" label="bundle v0.1.0" size="sm" />
+            <StatusBadge family="warn" label="node token: not yet issued" size="sm" />
+            <StatusBadge family="busy" label="camera runtime: probing" size="sm" />
+            <div style={{ display: "flex", gap: 8 }}><ActionButton variant="primary" icon="download">Provision</ActionButton><ActionButton variant="default" icon="rotate-cw">Re-provision</ActionButton></div>
+          </div>}
+          {step === 3 && <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {[["color", "ok", "available"], ["depth", "ok", "available"], ["ir1", "idle", "unavailable"], ["ir2", "idle", "unknown"]].map(([s, f, cap]) => (
+              <div key={s} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, minWidth: 130 }}>
+                <span style={{ font: "var(--type-mono-strong)", color: "var(--text-strong)" }}>{s}</span>
+                <StatusBadge family={f} label={cap} size="sm" />
+              </div>
+            ))}
+          </div>}
+          {step === 4 && <div>
+            <div style={{ font: "var(--type-label)", textTransform: "uppercase", letterSpacing: "var(--tracking-label)", color: "var(--text-muted)", marginBottom: 8 }}>Will create</div>
+            <pre style={{ margin: "0 0 14px", font: "var(--type-mono)", color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{`cam55/color → mp 2000 → UDP 5100
+cam55/depth → mp 2001 → UDP 5102`}</pre>
+            <div style={{ font: "var(--type-label)", textTransform: "uppercase", letterSpacing: "var(--tracking-label)", color: "var(--text-muted)", marginBottom: 8 }}>Will apply firewall</div>
+            <pre style={{ margin: 0, font: "var(--type-mono)", color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{`allow 192.168.1.55 → 192.168.1.10:5100
+allow 192.168.1.55 → 192.168.1.10:5102`}</pre>
+            <div style={{ display: "flex", gap: 8, marginTop: 14 }}><ActionButton variant="ghost" icon="play">Dry-run</ActionButton><ActionButton variant="primary" icon="zap">Activate</ActionButton></div>
+          </div>}
+          {step === 5 && <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {[["Node agent", "ok"], ["rs-stream active", "ok"], ["RTP received", "ok"], ["Janus mountpoint online", "ok"], ["FDIR enabled", "ok"]].map(([t, f]) => (
+              <div key={t} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <i data-lucide="circle-check-big" style={{ width: 16, height: 16, color: "var(--status-ok-solid)" }} />
+                <span style={{ font: "var(--type-body)", color: "var(--text-body)" }}>{t}</span>
+              </div>
+            ))}
+          </div>}
+        </div>
+        <div style={{ display: "flex", gap: 8, padding: "14px 18px", borderTop: "1px solid var(--border-subtle)", justifyContent: "space-between" }}>
+          <ActionButton variant="ghost" onClick={back} disabled={step === 0}>Back</ActionButton>
+          {step < WIZ_STEPS.length - 1
+            ? <ActionButton variant="primary" iconRight="arrow-right" onClick={next}>Next</ActionButton>
+            : <ActionButton variant="primary" icon="check" onClick={onClose}>Finish</ActionButton>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── App ───────────────────────────────────────────────────────────────── */
+function App() {
+  const [route, setRoute] = React.useState("command");
+  const [role, setRole] = React.useState("Operator");
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [alertOpen, setAlertOpen] = React.useState(true);
+  const [op, setOp] = React.useState(null);      // {preset, steps, running, result}
+  const [confirm, setConfirm] = React.useState(null);
+  const [wizard, setWizard] = React.useState(false);
+  const data = window.FLEET;
+
+  React.useEffect(() => { window.lucide && window.lucide.createIcons(); });
+
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 800); };
+
+  const runOp = (preset) => {
+    const stepLabels = OP_STEPS[preset.kind] || ["Request sent", "Acknowledged", "Done"];
+    setOp({ preset, steps: stepLabels.map((l, i) => ({ label: l, state: i === 0 ? "active" : "pending" })), running: true, result: null });
+    let i = 0;
+    const tick = () => {
+      i++;
+      setOp((cur) => {
+        if (!cur) return cur;
+        const steps = cur.steps.map((s, idx) => ({ label: s.label, state: idx < i ? "ok" : idx === i ? "active" : "pending" }));
+        const done = i >= steps.length;
+        if (done) return { ...cur, steps: steps.map((s) => ({ ...s, state: "ok" })), running: false, result: "ok" };
+        return { ...cur, steps };
+      });
+      if (i < stepLabels.length) setTimeout(tick, 700);
+    };
+    setTimeout(tick, 700);
+  };
+
+  const onAction = (kind, target) => {
+    if (kind === "diagnose") { setRoute("diagnostics"); return; }
+    if (kind === "open") { setRoute("viewer"); return; }
+    if (kind === "streams") { setRoute("streams"); return; }
+    if (kind === "stop") {
+      setConfirm({ title: `Stop ${target.binding}`, message: "Stopping disables FDIR for this binding.", impact: ["Stream goes offline immediately", "FDIR will be disabled", "Viewers reconnect on restart"], confirmLabel: "Stop stream" });
+      return;
+    }
+    if (kind === "remove-node") {
+      const id = target.nodeId;
+      setConfirm({ title: `Remove node ${id}`, destructive: true, confirmPhrase: id,
+        willRemove: target.streams.map((s) => `${id}:${s.sensor} binding + mp ${s.mp}`).concat([`firewall rules → ${target.host}`]),
+        willKeep: ["Gateway cam10 + its streams", "Audit history"], rollback: "Re-onboard via the Add node wizard.", confirmLabel: "Remove node" });
+      return;
+    }
+    const preset = buildOp(kind, target);
+    if (preset) { preset.kind = kind; setOp({ preset, steps: null, running: false, result: null }); }
+  };
+
+  const Screen = {
+    command: <SCREENS.CommandCenter data={data} onAction={onAction} />,
+    fleet: <SCREENS.FleetScreen data={data} />,
+    nodes: <SCREENS.NodesScreen data={data} onAction={onAction} onAddNode={() => setWizard(true)} />,
+    streams: <SCREENS.StreamsScreen data={data} onAction={onAction} />,
+    viewer: <SCREENS.ViewerWall data={data} />,
+    diagnostics: <SCREENS.DiagnosticsScreen data={data} />,
+    settings: <SCREENS.SettingsScreen data={data} />,
+  }[route];
+
+  return (
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <Sidebar active={route} onNav={setRoute} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <Topbar crumbs={TITLES[route]} role={role} onRole={setRole} onRefresh={refresh} refreshing={refreshing} />
+        {alertOpen && <AlertBar severity={data.alert.severity} count={data.alert.count} message={data.alert.message} actionLabel={data.alert.action} onAction={() => setRoute("diagnostics")} onDismiss={() => setAlertOpen(false)} />}
+        <main style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+          <div style={{ maxWidth: "var(--content-max)", margin: "0 auto" }}>{Screen}</div>
+        </main>
+      </div>
+
+      {op && <OperationDrawer open={true} {...op.preset} steps={op.steps} running={op.running} result={op.result}
+        onConfirm={() => runOp(op.preset)} onClose={() => setOp(null)} />}
+      {confirm && <ConfirmDialog open={true} {...confirm} onConfirm={() => setConfirm(null)} onClose={() => setConfirm(null)} />}
+      {wizard && <Wizard onClose={() => setWizard(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+setTimeout(() => window.lucide && window.lucide.createIcons(), 120);
+</script>
+</body>
+</html>

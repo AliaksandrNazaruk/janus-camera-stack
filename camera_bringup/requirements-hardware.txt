@@ -1,0 +1,29 @@
+# L0 camera_bringup — hardware-specific runtime dependencies.
+#
+# DO NOT install в clean-room reviewer / CI environments — this requires
+# physical Intel RealSense camera + specific Python version (hash-pinned
+# wheel per Python release, e.g. wheel for 3.12 != wheel for 3.13).
+#
+# Installed by Ansible deploy на физический hardware nodes (depth camera
+# Pi). См. host_infra/ для deployment automation.
+#
+# pyrealsense2 imports happen в:
+#   - camera_bringup/realsense_query.py (subprocess wrapper, module-level)
+#   - camera_bringup/hw_reset_realsense.py (deferred import in function)
+# Neither path exercised by tests/unit/ — tests mock these subprocess calls.
+#
+# Install:
+#   pip install --require-hashes -r requirements-hardware.txt
+#
+# Hash regeneration (после version bump или для new Python release):
+#   pip download --no-deps pyrealsense2==<version> -d /tmp/dl/
+#   sha256sum /tmp/dl/*.whl
+#   (update hash below)
+#
+# Compliance: NIST SP 800-218 / SLSA L2 — pinned + hash-verified.
+
+# pyrealsense2 wheel: native binary, Python-version-specific.
+# Current hash matches CPython 3.12 cp312-cp312-manylinux2014_aarch64 wheel.
+# For Python 3.13 / other versions, hash must be regenerated.
+pyrealsense2==2.58.1.10581 \
+    --hash=sha256:1226bb06e6965cb9edb2c3d477be2ddadfcb6f60be2f2ec8649c23b19800752b

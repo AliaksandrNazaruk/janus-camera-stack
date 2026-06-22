@@ -1,0 +1,96 @@
+name: Bug Report
+description: Report a defect in janus-camera-page
+title: "[Bug] "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please fill in as much of the following as you can.
+        Security issues — do NOT use this form. See [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Clear description of the bug.
+      placeholder: "Video stream froze after 30 seconds, never recovered..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal reliable repro.
+      placeholder: |
+        1. Deploy stack via docker-compose.prod.yml
+        2. Open http://host:8900/color_camera
+        3. Click "Start stream"
+        4. Wait 30 seconds
+        5. Stream freezes (no frames update)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: Stream stays live indefinitely.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version (commit hash or tag)
+      placeholder: v0.1.0 OR commit abc1234
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy-target
+    attributes:
+      label: Deployment target
+      options:
+        - Docker Compose (single-host)
+        - Kubernetes (raw manifests)
+        - Helm chart
+        - Bare metal / systemd
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + OS (for client-side bugs)
+      placeholder: Chrome 135 on macOS Sonoma; OR N/A (server-side)
+
+  - type: input
+    id: janus
+    attributes:
+      label: Janus version
+      placeholder: 1.2.4 (canyan/janus-gateway image)
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Camera-page logs: `kubectl logs deploy/camera-page --tail=100`
+        OR `journalctl -u janus-camera-page -n 100`
+        Browser console errors if client-side.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: Searched existing issues, no duplicate
+          required: true
+        - label: Reproducer is minimal (not buried in a larger deployment)
+          required: true
+        - label: I'm running a supported version (see SECURITY.md)
+          required: false

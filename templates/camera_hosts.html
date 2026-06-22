@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Hosts — {{ cam_type }}</title>
+  <meta name="style-nonce" content="{{ style_nonce }}">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/camera_config.css?v=3">
+  <style nonce="{{ style_nonce }}">
+    .muted { color: #64748b; font-size: 0.9em; }
+    .ok { color: #15803d; font-weight: 600; }
+    .danger { color: #b91c1c; font-weight: 600; }
+    .host-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 12px 0; background: #fff; }
+    .host-card.local { border-left: 4px solid #2563eb; }
+    .host-card.remote { border-left: 4px solid #64748b; }
+    .host-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .host-title { font-weight: 600; font-size: 15px; }
+    .host-host { font-family: monospace; color: #475569; }
+    .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge.local { background: #dbeafe; color: #1e40af; }
+    .badge.ready { background: #dcfce7; color: #166534; }
+    .badge.pending { background: #fef3c7; color: #92400e; }
+    .badge.bad { background: #fee2e2; color: #991b1b; }
+    .badge.idle { background: #f1f5f9; color: #475569; }
+    .sensor-grid { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+    .sensor-chip { display: flex; align-items: center; gap: 6px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+    .pill { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+    .pill.online { background: #dcfce7; color: #166534; }
+    .pill.offline { background: #f1f5f9; color: #475569; }
+    .pill.stale, .pill.degraded { background: #fee2e2; color: #991b1b; }
+    .pill.waiting { background: #fef3c7; color: #92400e; }
+    .step { background: #f8fafc; border-radius: 6px; padding: 10px 12px; margin: 8px 0; }
+    .step h4 { margin: 0 0 6px; font-size: 13px; }
+    .step input[type=text], .step input[type=password] { font-family: monospace; font-size: 12px; padding: 4px 6px; }
+    .host-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button.primary { background: #2563eb; color: #fff; padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    button.primary:hover { background: #1d4ed8; }
+    button.primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    button.secondary { background: #e2e8f0; color: #1e293b; padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; }
+    button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.danger { background: #fee2e2; color: #991b1b; padding: 6px 14px; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    button.danger:hover { background: #fecaca; }
+    button.tiny { font-size: 11px; padding: 2px 8px; }
+    a.tiny { font-size: 11px; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 4px; text-decoration: none; }
+    .warning-bar { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px; margin: 12px 0; border-radius: 4px; display: none; }
+    .row { display: flex; gap: 10px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+    .mono { font-family: monospace; font-size: 12px; word-break: break-all; }
+    .badge.warn { background: #fef3c7; color: #92400e; }
+    .badge.maint { background: #fde68a; color: #78350f; }
+    .diag { font-size: 12px; color: #64748b; margin: 6px 0 0; }
+    .diag .err { color: #b91c1c; }
+    .sensor-chip.disabled-fdir { border-style: dashed; opacity: 0.85; }
+    .stream-actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .node-ops { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+    #fwOut { white-space: pre-wrap; font-family: monospace; font-size: 12px; background: #f8fafc; border-radius: 6px; padding: 8px; margin-top: 8px; max-height: 220px; overflow: auto; }
+  </style>
+</head>
+<body data-cam-type="{{ cam_type }}" data-gateway-lan-ip="{{ gateway_lan_ip }}">
+
+  <h1>Camera Hosts</h1>
+  <p class="subtitle">
+    Add and manage camera hosts — local gateway or remote node, the same way.
+    Each host exposes RealSense sensors (color / depth / ir1 / ir2) as Janus streams.
+    <br>
+    <a href="/console.html">→ Console</a> &nbsp;·&nbsp; <a href="/cameras/dashboard.html">→ Devices</a>
+  </p>
+
+  <div id="status" class="info">Loading…</div>
+
+  <div id="bundleWarn" class="warning-bar">
+    <strong>⚠ Node bundle not built on the gateway.</strong> Remote provisioning is blocked
+    until the camera-node bundle exists. Build it (<span class="mono">host_infra/node-bundle/build-bundle.sh</span>),
+    then retry. Local activation is unaffected.
+  </div>
+
+  <h2>Hosts</h2>
+  <div id="hostsContainer"><p class="muted">Loading hosts…</p></div>
+
+  <fieldset>
+    <legend>Add a camera host</legend>
+    <p class="muted">
+      Enter a remote node's LAN IP. The gateway's own camera is the built-in
+      <code>cam10</code> host above — you don't add it here.
+    </p>
+    <div class="row">
+      <label for="hostInput">Host (IPv4)</label>
+      <input type="text" id="hostInput" placeholder="e.g. 192.168.1.42" style="width: 200px;">
+      <label for="displayNameInput">Name</label>
+      <input type="text" id="displayNameInput" placeholder="(optional) Arm RealSense #1" style="width: 240px;">
+      <button type="button" id="addNodeBtn" class="primary">Add host</button>
+    </div>
+    <div id="addStatus" class="muted"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Network · RTP firewall</legend>
+    <p class="muted">
+      Remote streams are exposed by a fail-closed per-node firewall (one ACCEPT per
+      <code>node-IP → gateway RTP port</code>, then a backstop DROP). Dry-run shows the
+      diff between the binding store and live <code>iptables</code>; apply makes it so.
+    </p>
+    <div class="host-actions">
+      <button type="button" id="fwDryRun" class="secondary">Firewall dry-run</button>
+      <button type="button" id="fwApply" class="danger">Apply firewall rules</button>
+      <span class="muted" id="fwStatus"></span>
+    </div>
+    <div id="fwOut" style="display:none"></div>
+  </fieldset>
+
+  <script src="/static/js/console_lib.js?v=1" nonce="{{ script_nonce }}"></script>
+  <script src="/static/js/camera_hosts.js?v=2" nonce="{{ script_nonce }}"></script>
+</body>
+</html>

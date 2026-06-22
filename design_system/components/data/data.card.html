@@ -1,0 +1,99 @@
+<!-- @dsCard group="Components" viewport="900x680" name="Data — Nodes, Streams, Diagnostics" subtitle="HealthCard · StreamRow · NodeCard · DiagnosticsPanel · DriftDiff · EventTimeline · ViewerTile" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-body); }
+  .wrap { padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .lbl { font: var(--weight-semibold) var(--text-xs)/1 var(--font-sans); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-muted); margin: 4px 0 9px; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+  thead th { text-align: left; font: var(--weight-semibold) var(--text-2xs)/1 var(--font-sans); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-faint); padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-sunken); }
+  thead th:first-child { padding-left: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @keyframes gc-pulse { 0% { opacity: 1; } 70% { opacity: 0.55; } 100% { opacity: 1; } }
+  @keyframes gc-spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div id="root" class="wrap"></div>
+  <script type="text/babel">
+    const NS = window.GatewayConsoleDesignSystem_64aa70;
+    const { HealthCard, StreamRow, NodeCard, DiagnosticsPanel, DriftDiff, EventTimeline, ViewerTile } = NS;
+    function Demo() {
+      return (
+        <>
+          <HealthCard services={[
+            { name: "Gateway", status: "healthy" }, { name: "Janus", status: "healthy" },
+            { name: "Cloudflare", status: "healthy" }, { name: "FDIR", status: "enabled" },
+            { name: "Firewall", status: "synced" }, { name: "Streams", status: "degraded", label: "3/4 live" },
+          ]} />
+
+          <div>
+            <div className="lbl">StreamRow — operator table</div>
+            <table>
+              <thead><tr>
+                <th>Stream</th><th>Node</th><th>Sensor</th><th>Status</th><th>RTP Age</th>
+                <th>MP</th><th>Port</th><th>FDIR</th><th>Last Error</th><th style={{textAlign:"right",paddingRight:14}}>Actions</th>
+              </tr></thead>
+              <tbody>
+                <StreamRow binding="cam10:color" node="cam10" sensor="color" status="online" rtpAgeMs={80} mountpoint={1305} rtpPort={5004} fdir="enabled" />
+                <StreamRow binding="cam55:color" node="cam55" sensor="color" status="online" rtpAgeMs={110} mountpoint={2000} rtpPort={5100} fdir="enabled" />
+                <StreamRow binding="cam55:depth" node="cam55" sensor="depth" status="stale" rtpAgeMs={24000} mountpoint={2001} rtpPort={5102} fdir="disabled" lastError="no RTP" />
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid2">
+            <NodeCard nodeId="cam55" host="192.168.1.55" role="remote_producer" model="RealSense D435" serial="141722072135" status="online"
+              streams={[
+                { sensor: "color", status: "online", mp: 2000, port: 5100, rtpAge: "90ms" },
+                { sensor: "depth", status: "stale", mp: 2001, port: 5102, rtpAge: "24s" },
+              ]} />
+            <div className="col">
+              <DiagnosticsPanel title="Data plane" icon="radio" rows={[
+                { key: "rtp_packets", value: "yes", status: "ok" },
+                { key: "rtp_age_ms", value: "90" },
+                { key: "janus_video_age", value: "100ms" },
+                { key: "webrtc_viewers", value: "1" },
+              ]} />
+              <DriftDiff
+                desired={["cam55/color enabled", "cam55/depth enabled"]}
+                actual={["cam55/color online", "!cam55/depth waiting_for_rtp"]}
+                drift={["cam55/depth desired=active, actual=waiting"]} />
+            </div>
+          </div>
+
+          <div className="grid2">
+            <div>
+              <div className="lbl">EventTimeline</div>
+              <EventTimeline dense events={[
+                { time: "14:22", target: "cam55:color", message: "restarted by operator", result: "ok", action: "stream.restart", actor: "operator" },
+                { time: "14:20", target: "cam55", message: "FDIR skipped — maintenance on", result: "suppressed", reason: "maintenance" },
+                { time: "14:15", message: "firewall reconcile applied", result: "ok" },
+              ]} />
+            </div>
+            <div>
+              <div className="lbl">ViewerTile</div>
+              <div className="tiles">
+                <ViewerTile binding="cam55:color" status="online" rtpAge="90ms" pinned />
+                <ViewerTile binding="cam55:depth" status="stale" rtpAge="24s" fdirEvent="restart" />
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    setTimeout(() => window.lucide && window.lucide.createIcons(), 80);
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Anything not needed at runtime
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+tests/
+docs/
+*.md
+docker-compose*.yml
+Dockerfile
+.dockerignore
+deploy/
+monitoring/
+infrastructure/
+host_infra/
