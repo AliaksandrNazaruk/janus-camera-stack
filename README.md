@@ -3,10 +3,17 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 
-**A WebRTC camera streaming stack for robots and edge devices.** Stream any
+**An end-to-end WebRTC camera streaming stack for robots and edge devices —
+from the camera sensor all the way to the browser `<video>`.** Stream any
 RealSense / V4L2 / RTSP camera — local *or* on a remote node — to the browser
 over WebRTC, with a single control plane that owns the desired topology and
 drives the cameras, encoders, and the WebRTC gateway toward it.
+
+Beyond video, depth cameras are **interactive**: the viewer can request a
+**single depth snapshot** (a full float32 depth frame, or an aligned RGBD frame)
+and the **metric depth at any one pixel** — over two paths, a low-latency
+**textroom data-channel** (click-to-measure, no extra round-trip to a server)
+*and* a plain **REST API**. See [Depth queries](#depth-queries).
 
 It is **application-agnostic**: joystick, gripper, mission HUDs etc. live in a
 separate overlay layer, not in the stack.
@@ -99,6 +106,28 @@ storm. See [`docs/player_internals/`](docs/player_internals/).
 A **back-channel SDK** (pub/sub over a Janus textroom) carries bidirectional data
 (control commands, click-to-depth queries, joystick) without leaving the page.
 
+### Depth queries
+
+A depth camera is not just a video feed — you can **interrogate the depth on
+demand**, through either of two paths:
+
+- **Textroom data-channel (click-to-measure).** The browser publishes a
+  `depth_query{x, y}` over the Janus textroom; the mux samples the *aligned*
+  depth at that pixel and returns a `depth_result`, delivered back to **that
+  session only** via SSE (`/depth_events`, per-session isolated). This is the
+  click-on-the-video → "1.42 m" interaction, with no HTTP round-trip per click.
+- **REST API** (same data, scriptable):
+
+  | Endpoint | Returns |
+  |---|---|
+  | `GET /depth?x=&y=` | metric depth at a **single pixel** |
+  | `GET /depth/frame` | a **full depth snapshot** (float32) |
+  | `GET /depth/color_frame` | the matching colour frame (RGB24) |
+  | `GET /depth/frame_color_overlay` | an **aligned RGBD** frame |
+
+Both paths run the same RGB↔depth alignment, so a pixel clicked on the colour
+image maps to the correct depth. Endpoints are viewer-auth gated and rate-limited.
+
 ---
 
 ## Quickstart
@@ -130,7 +159,8 @@ Any V4L2 webcam works too (no RealSense needed) — see the USB tutorial in the 
 ## What you get / what's not included
 
 **Included:** browser video viewer (low-latency `<video>`, ~80 ms steady-state) ·
-event-driven autonomous reconnection · back-channel data SDK · click-to-depth for
+event-driven autonomous reconnection · back-channel data SDK · on-demand depth
+queries (full-frame snapshot + per-pixel metric depth, via data-channel **or** REST) for
 RealSense · multi-sensor pipelines (color + depth + IR) · local **and** remote
 nodes with gateway-driven recovery · FDIR auto-recovery · scoped boundary CLIs
 (`camera-admin` / `encoder-admin` / `janus-admin`) · architecture-fitness tests ·
