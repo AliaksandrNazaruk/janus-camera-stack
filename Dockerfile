@@ -1,17 +1,18 @@
 # syntax=docker/dockerfile:1
 #
-# janus_camera_page — production image for L4 (FastAPI dashboard + back-channel
-# orchestrator). Slim Python image. NO ffmpeg, NO /dev/video* access — those
-# live on edge encoder nodes, not in cloud L4.
+# janus-camera-stack — production image for the L4 control plane (FastAPI
+# dashboard + back-channel orchestrator). Slim Python image. NO ffmpeg, NO
+# /dev/video* access — those live on the edge encoder nodes, not in the L4 plane.
 #
-# Build:
-#   docker build -f janus_camera_page/Dockerfile -t janus-camera-page:latest .
+# Build (from the repo root):
+#   docker build -t janus-camera-stack:latest .
 #
-# Run (standalone, local Janus):
+# Run (standalone; point it at a Janus instance):
 #   docker run --rm -p 8900:8900 \
 #     -e JANUS_API_URL=http://host.docker.internal:8088/janus \
 #     -e CAMERA_TYPE=color_camera \
-#     janus-camera-page:latest
+#     janus-camera-stack:latest
+#   # then: curl http://localhost:8900/livez   → {"ok": true}
 
 FROM python:3.12-slim AS base
 
@@ -28,17 +29,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl tini && \
     rm -rf /var/lib/apt/lists/*
 
-COPY janus_camera_page/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
-COPY janus_camera_page/app/ /app/app/
-COPY janus_camera_page/static/ /app/static/
-COPY janus_camera_page/templates/ /app/templates/
-COPY janus_camera_page/main.py /app/main.py
-# realsense_mux.py intentionally NOT copied: it's the hardware-free depth-contract
-# reference fixture (SOURCE_OF_TRUTH §2), not deployed. The L4 image runs only main:app;
-# the deployed mux is host_infra/roles/encoder/files/realsense-mux.py on the camera node.
-COPY janus_camera_page/textroom_relay.py /app/textroom_relay.py
+COPY app/ /app/app/
+COPY static/ /app/static/
+COPY templates/ /app/templates/
+COPY main.py /app/main.py
+# realsense_mux.py is intentionally NOT copied: it is the hardware-free
+# depth-contract reference, not deployed in L4. The image runs only main:app;
+# the deployed mux lives at host_infra/roles/encoder/files/realsense-mux.py on
+# the camera node.
+COPY textroom_relay.py /app/textroom_relay.py
 
 RUN useradd -m -u 10001 appuser && \
     chown -R appuser:appuser /app && \
