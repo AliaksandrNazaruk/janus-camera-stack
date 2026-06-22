@@ -1,0 +1,27 @@
+# Turnkey demo — the L4 control plane only (no Janus, no camera hardware).
+#
+#   docker compose up --build
+#   → operator console at  http://localhost:8900/console.html
+#   → health:              curl http://localhost:8900/livez   # {"ok": true}
+#
+# This is the fastest way to see the console + admin API. Janus calls degrade
+# cleanly (it isn't running here). For the FULL media stack — L4 + Janus + coturn
+# + Prometheus/Grafana — use docker-compose.prod.yml.
+#
+# Override the host port if 8900 is taken:  HOST_PORT=18900 docker compose up
+services:
+  janus-camera-stack:
+    build: .
+    image: janus-camera-stack:latest
+    container_name: janus-camera-stack
+    environment:
+      CAM_TYPE: ${CAMERA_TYPE:-color_camera}
+      CAM_AUTH_DISABLED: "1"          # demo: browse the console without tokens
+    ports:
+      - "${HOST_PORT:-8900}:8900"
+    volumes:
+      - app-state:/var/lib/robot
+    restart: unless-stopped
+
+volumes:
+  app-state:

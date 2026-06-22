@@ -24,12 +24,11 @@
 # k8s example, OR add reverse-proxy service here for Docker.
 
 services:
-  janus-camera-page:
+  janus-camera-stack:
     build:
-      context: ..
-      dockerfile: janus_camera_page/Dockerfile
-    image: janus-camera-page:prod
-    container_name: janus-camera-page
+      context: .
+    image: janus-camera-stack:prod
+    container_name: janus-camera-stack
     environment:
       CAM_TYPE: ${CAMERA_TYPE:-color_camera}
       PORT: 8900
@@ -59,6 +58,18 @@ services:
       timeout: 5s
       start_period: 15s
       retries: 3
+
+  # Back-channel relay (depth queries, control pub/sub over the Janus textroom).
+  # Reuses the L4 image; runs only the relay app.
+  textroom-relay:
+    image: janus-camera-stack:prod
+    container_name: textroom-relay
+    command: ["uvicorn", "textroom_relay:app", "--host", "0.0.0.0", "--port", "8910"]
+    environment:
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?must set}
+    depends_on:
+      - janus-camera-stack
+    restart: unless-stopped
 
   janus:
     # Community-built Janus image. Pin to specific SHA for reproducibility.
