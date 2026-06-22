@@ -24,6 +24,34 @@ separate overlay layer, not in the stack.
 
 ---
 
+## The operator console
+
+The stack ships a built-in web console (served at `/console.html`) — no separate
+front-end to deploy. It is **role-aware** (Operator / Engineer / Admin) so a
+read-only operator and a full admin see the same data with different powers.
+
+**Command Center** — system status at a glance: gateway / Janus / FDIR / firewall
+health, nodes-online and streams-live counters, open alerts, an *Attention
+Required* banner with one-click Diagnostics / Restart / Maintenance, a live
+streams table (status · RTP age · mountpoint · port · FDIR), and a recent-events
+feed.
+
+![Command Center](docs/images/console-command-center.png)
+
+**Nodes** — *local and remote nodes are managed the same way.* Each node is a
+card showing agent / camera / provision / maintenance / host-key / token health
+and its per-sensor streams (mountpoint · port · live RTP age), with Provision,
+Maintenance, Rotate-token and Danger-Zone actions. Adding a remote producer is a
+single **Add node**.
+
+![Nodes](docs/images/console-nodes.png)
+
+The console also has **Fleet**, **Streams**, a **Viewer Wall** (multi-stream
+grid), **Diagnostics**, and **Settings** views — all driven by the same admin API
+that automation can call directly.
+
+---
+
 ## How it works
 
 The stack is layered. Each layer talks only to its neighbours through a narrow
