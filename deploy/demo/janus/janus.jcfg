@@ -1,0 +1,40 @@
+# Janus core config — DEMO (localhost, no camera). For docker-compose.demo.yml.
+#
+# Single-host demo where the browser, Janus, and the test RTP source all live on
+# the same machine. ICE uses host/loopback candidates — no nat_1_1_mapping, no
+# TURN. Do NOT use for a public/remote deployment (see deploy/janus/etc/janus.jcfg).
+general: {
+    configs_folder = "/usr/local/etc/janus"
+    plugins_folder = "/usr/local/lib/janus/plugins"
+    transports_folder = "/usr/local/lib/janus/transports"
+    debug_level = 4
+    session_timeout = 90
+    reclaim_session_timeout = 30
+    admin_secret = "demo-admin-secret"
+}
+
+nat: {
+    # Local demo: advertise loopback/host candidates only. A browser on the same
+    # host connects directly. No nat_1_1_mapping / TURN needed.
+    stun_server = "stun.l.google.com"
+    stun_port = 19302
+    full_trickle = true
+    ignore_mdns = true
+    ice_tcp = false
+}
+
+media: {
+    rtp_port_range = "20000-40000"
+    ipv6 = false
+    max_nack_queue = 500
+    no_media_timer = 1
+    slowlink_threshold = 4
+}
+
+events: {
+    broadcast = false
+}
+
+certificates: {
+    # Janus auto-generates internal DTLS certs.
+}

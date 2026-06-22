@@ -170,10 +170,34 @@ docker compose up --build            # control plane only; HOST_PORT=18900 to re
 
 `docker-compose.yml` runs just the L4 control plane (no camera / Janus needed) so
 you can explore the console + admin API immediately; Janus calls degrade cleanly.
-For the **full media stack** (L4 + Janus + coturn + Prometheus/Grafana) copy
+
+### See real video with no camera — the synthetic demo
+
+```bash
+docker compose -f docker-compose.demo.yml up --build
+# → open  http://localhost:8900/preview/1305   (a moving test pattern)
+```
+
+This wires the **whole media path** end to end without any hardware:
+
+```
+ffmpeg testsrc → H.264/RTP :5004 → Janus mountpoint 1305 → WebRTC → browser
+```
+
+Janus is **built from source** (`deploy/janus/Dockerfile`) because there is no
+official multi-arch image — so it works on amd64 **and** arm64 (Raspberry Pi).
+The first run compiles Janus (a few minutes), then it's cached. Linux + host
+networking; loopback ICE, no TURN.
+
+> Verified on arm64 through the Janus mountpoint (image builds, Janus boots, the
+> mountpoint is created, and it receives the test RTP — `New video stream!`). The
+> final browser WebRTC hop is the standard Janus streaming path.
+
+For the **full secured stack** (L4 + Janus + coturn + Prometheus/Grafana) copy
 `infrastructure/secrets.env.example` to `.env`, fill it in, and use
-`docker compose -f docker-compose.prod.yml up -d`. (Camera + encoder still run on
-an edge node with the hardware — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).)
+`docker compose -f docker-compose.prod.yml up -d` (set `JANUS_IMAGE` or build
+`deploy/janus`). Real cameras + encoders run on an edge node with the hardware —
+see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ### Host install (production, with cameras)
 

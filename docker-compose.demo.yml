@@ -1,0 +1,62 @@
+# Synthetic-video demo — see real WebRTC video in the browser with NO camera.
+#
+#   docker compose -f docker-compose.demo.yml up --build
+#   → open  http://localhost:8900/preview/1305   (a moving test pattern)
+#
+# Pipeline (all on one host, loopback ICE — no TURN, no public IP):
+#   ffmpeg testsrc → H.264/RTP :5004 → Janus mountpoint 1305 → WebRTC → browser
+#
+# Janus is BUILT FROM SOURCE (deploy/janus/Dockerfile) so this works on amd64 and
+# arm64 alike — there is no official multi-arch Janus image. The first build
+# compiles Janus + libs (several minutes); it is cached afterwards.
+#
+# Uses host networking so the browser, Janus, and the RTP source share loopback.
+# Linux only; needs ports 8900/8088/8188/5004 + Janus's RTP range free.
+services:
+  janus:
+    build: ./deploy/janus
+    image: janus-from-source:latest
+    container_name: janus-demo
+    network_mode: host
+    volumes:
+      - ./deploy/demo/janus:/usr/local/etc/janus:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8088/janus/info"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+  testsrc:
+    image: linuxserver/ffmpeg:latest
+    container_name: janus-demo-testsrc
+    network_mode: host
+    depends_on:
+      janus:
+        condition: service_healthy
+    command: >
+      -re -f lavfi -i testsrc=size=1280x720:rate=25
+      -c:v libx264 -preset ultrafast -tune zerolatency
+      -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 25
+      -an -f rtp -payload_type 96 rtp://127.0.0.1:5004
+    restart: unless-stopped
+
+  janus-camera-stack:
+    build: .
+    image: janus-camera-stack:latest
+    container_name: janus-camera-stack
+    network_mode: host
+    environment:
+      CAM_TYPE: color_camera
+      CAM_AUTH_DISABLED: "1"                       # demo: open viewer, no tokens
+      ICE_POLICY: all                              # local: use host/loopback candidates
+      JANUS_URL: http://127.0.0.1:8088/janus
+      JANUS_HTTP: http://127.0.0.1:8088
+      JANUS_WS_URL_1: ws://127.0.0.1:8188/janus-ws
+      JANUS_ADMIN_URL: http://127.0.0.1:7088/admin
+      JANUS_ADMIN_SECRET: demo-admin-secret
+    depends_on:
+      janus:
+        condition: service_healthy
+    restart: unless-stopped

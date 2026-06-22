@@ -1,0 +1,9 @@
+# WebSocket transport — primary client transport for browsers.
+general: {
+    json = "indented"
+    ws = true
+    ws_port = 8188
+    ws_logging = "error"
+    ws_acl = ""
+    admin_ws = false
+}

@@ -72,11 +72,11 @@ services:
     restart: unless-stopped
 
   janus:
-    # NOTE: there is no official multi-arch Janus image. The community
-    # `canyan/janus-gateway` images are amd64-only — on arm64 (e.g. Raspberry Pi)
-    # build Janus from source or run it natively on the host (install.sh does the
-    # latter). Override with your own image/tag via JANUS_IMAGE.
-    image: ${JANUS_IMAGE:-canyan/janus-gateway:latest}
+    # There is no official multi-arch Janus image, so we build it from source
+    # (deploy/janus/Dockerfile) — works on amd64 AND arm64. Override with a
+    # prebuilt image via JANUS_IMAGE if you have one.
+    build: ./deploy/janus
+    image: ${JANUS_IMAGE:-janus-from-source:latest}
     container_name: janus
     network_mode: host
     volumes:

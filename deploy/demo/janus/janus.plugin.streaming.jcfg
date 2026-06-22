@@ -1,0 +1,18 @@
+# Streaming plugin — DEMO. One static H.264 mountpoint fed by the ffmpeg
+# `testsrc` source in docker-compose.demo.yml. Watch it at
+# http://localhost:8900/preview/1305 — no camera needed.
+general: {
+    admin_key = "demo-admin-key"
+}
+
+testsrc1305: {
+    type = "rtp"
+    id = 1305
+    description = "Static test pattern (ffmpeg testsrc -> RTP)"
+    audio = false
+    video = true
+    videoport = 5004
+    videopt = 96
+    videocodec = "h264"
+    videofmtp = "profile-level-id=42e01f;packetization-mode=1"
+}
