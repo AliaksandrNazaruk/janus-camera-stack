@@ -62,15 +62,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build image (no push)
+      - name: Build image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile
           push: false
-          tags: janus-camera-page:ci
+          load: true
+          tags: janus-camera-stack:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Smoke test — run the container, hit the control plane
+        run: |
+          docker run -d --name jcs -p 8900:8900 janus-camera-stack:ci
+          for i in $(seq 1 30); do curl -fsS localhost:8900/livez && break; sleep 1; done
+          echo
+          curl -fsS localhost:8900/livez
+          curl -fsS -o /dev/null -w "console.html -> %{http_code}\n" localhost:8900/console.html
+          curl -fsS -o /dev/null -w "healthz -> %{http_code}\n" localhost:8900/healthz
+          docker logs jcs | tail -5
+          docker rm -f jcs
 
   helm:
     name: Helm chart lint + template

@@ -72,9 +72,11 @@ services:
     restart: unless-stopped
 
   janus:
-    # Community-built Janus image. Pin to specific SHA for reproducibility.
-    # Alternative: build from source with our jcfg (see deploy/janus/).
-    image: canyan/janus-gateway:1.2.4
+    # NOTE: there is no official multi-arch Janus image. The community
+    # `canyan/janus-gateway` images are amd64-only — on arm64 (e.g. Raspberry Pi)
+    # build Janus from source or run it natively on the host (install.sh does the
+    # latter). Override with your own image/tag via JANUS_IMAGE.
+    image: ${JANUS_IMAGE:-canyan/janus-gateway:latest}
     container_name: janus
     network_mode: host
     volumes:
