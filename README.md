@@ -160,6 +160,23 @@ image maps to the correct depth. Endpoints are viewer-auth gated and rate-limite
 
 ## Quickstart
 
+### Run with Docker (fastest — see the console in ~5 s)
+
+```bash
+git clone <your-fork-url> janus-camera-stack && cd janus-camera-stack
+docker compose up --build            # control plane only; HOST_PORT=18900 to remap
+# → operator console at http://localhost:8900/console.html
+```
+
+`docker-compose.yml` runs just the L4 control plane (no camera / Janus needed) so
+you can explore the console + admin API immediately; Janus calls degrade cleanly.
+For the **full media stack** (L4 + Janus + coturn + Prometheus/Grafana) copy
+`infrastructure/secrets.env.example` to `.env`, fill it in, and use
+`docker compose -f docker-compose.prod.yml up -d`. (Camera + encoder still run on
+an edge node with the hardware — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).)
+
+### Host install (production, with cameras)
+
 **Single host (Raspberry Pi 4/5 or generic Ubuntu/Debian):**
 
 ```bash
