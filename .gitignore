@@ -11,3 +11,4 @@ _archive/
 *.bak-preview
 .pytest_cache/
 .hypothesis/
+.coverage
