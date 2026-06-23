@@ -20,7 +20,9 @@ from app.core.admin import require_admin
 from app.core.settings import get_settings
 from app.middleware.rate_limit import require_admin_rate_limit
 from app.services import audit_log as audit_log_service
+from app.services import jcfg_renderer, systemd
 
+from app.services.audit_log import audit
 from app.application import services_admin
 # Models moved to the use-case module (C-04 split); imported here for response_model=.
 from app.application.services_admin import ServiceState, RestartResponse
@@ -32,7 +34,7 @@ from app.services.encoder_env import EncoderEnvSpec
 from app.application import device_inventory
 from app.application.device_inventory import V4l2Device, RealsenseProbeResponse
 from app.application import mountpoint_admin
-from app.application.mountpoint_admin import CreateMountpointRequest, CreateMountpointResponse
+from app.application.mountpoint_admin import MountpointInfo, CreateMountpointRequest, CreateMountpointResponse
 from app.application import audit_view
 from app.application import dashboard as dashboard_uc
 from app.application.dashboard import DashboardSnapshot

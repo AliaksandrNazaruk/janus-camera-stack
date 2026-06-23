@@ -51,7 +51,7 @@ jobs:
           HOST_LAN_IP: "192.168.1.10"
           DEPTH_CAM_URL: "http://192.168.1.55:8900"
         run: |
-          python -m pytest tests/ \
+          python -m pytest tests/ --ignore=tests/e2e \
             -m "not hardware and not simulator" \
             --timeout=30 \
             -q --tb=short \

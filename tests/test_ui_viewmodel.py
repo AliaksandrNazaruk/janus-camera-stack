@@ -197,7 +197,7 @@ async def test_route_requires_admin(client):
 
 
 async def test_operator_console_page_serves_live_assets(admin_client):
-    # canonical /console.html (console.your-domain.example) + the alias both serve
+    # canonical /console.html (console.example.com) + the alias both serve
     # the new design-system console.
     for path in ("/console.html", "/operator_console.html"):
         r = await admin_client.get(path)

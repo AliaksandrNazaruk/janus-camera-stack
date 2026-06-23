@@ -66,12 +66,10 @@ def _used_sets(bindings: dict, alloc_state_path: Path) -> Tuple[set, set]:
     for b in bindings.values():
         used_mp.add(int(b["janus"]["mountpoint_id"]))
         rtp = int(b["transport"]["rtp_port"])
-        used_port.add(rtp)
-        used_port.add(rtp + 1)
+        used_port.add(rtp); used_port.add(rtp + 1)
     for a in _alloc.list_allocations(alloc_state_path).values():
         used_mp.add(a.mp_id)
-        used_port.add(a.rtp_port)
-        used_port.add(a.rtp_port + 1)
+        used_port.add(a.rtp_port); used_port.add(a.rtp_port + 1)
     return used_mp, used_port
 
 

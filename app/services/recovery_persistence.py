@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    pass
+    from app.services.recovery_ladder import LadderLevel
 
 logger = logging.getLogger("fdir.persistence")
 

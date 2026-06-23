@@ -104,7 +104,7 @@ def local_serial() -> Optional[str]:
 
 def get_registry() -> List[DeviceEntry]:
     """Public API — returns full device topology with provisioning state."""
-    get_settings()
+    settings = get_settings()
     devices = _discover_devices()
     entries: List[DeviceEntry] = []
 
@@ -112,7 +112,7 @@ def get_registry() -> List[DeviceEntry]:
     # If there's a discovered device, we attribute that encoder to its serial.
     # If no device discovered, we still surface the encoder under
     # serial="unknown" so dashboard isn't blank if libusb perms fail.
-    devices[0]["serial"] if devices else "unknown"
+    first_serial = devices[0]["serial"] if devices else "unknown"
 
     def _build_sensors(serial: str, is_first: bool) -> List[SensorEntry]:
         from app.services.sensor_lifecycle import (

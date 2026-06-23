@@ -14,11 +14,12 @@ Modes form a lattice:
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from app.services.fdir_events import Domain, RecoveryAction, Severity, emit
 

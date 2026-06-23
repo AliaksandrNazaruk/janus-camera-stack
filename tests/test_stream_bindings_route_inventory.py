@@ -21,6 +21,8 @@ EXPECTED_ROUTES = {
     ("GET", "/api/v1/admin/nodes/{node_id}/host-key"),
     ("POST", "/api/v1/admin/nodes/{node_id}/host-key/confirm"),
     ("POST", "/api/v1/admin/nodes/{node_id}/streams"),
+    ("GET", "/api/v1/admin/nodes/{node_id}/depth"),
+    ("GET", "/api/v1/admin/nodes/{node_id}/depth/frame"),
     # operations
     ("GET", "/api/v1/admin/operations"),
     ("GET", "/api/v1/admin/operations/{operation_id}"),
@@ -66,4 +68,4 @@ def test_stream_bindings_route_set_is_frozen():
 
 
 def test_stream_bindings_route_count_is_28():
-    assert len(_actual_routes()) == 28
+    assert len(_actual_routes()) == 30

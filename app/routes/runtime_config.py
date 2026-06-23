@@ -40,7 +40,7 @@ _APPLY_HTTP = {
     Outcome.ROLLBACK_FAILED: 500,
 }
 
-from app.services.audit_log import audit  # noqa: E402
+from app.services.audit_log import audit
 
 log = logging.getLogger(__name__)
 
