@@ -39,7 +39,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-timeout
+          pip install -r requirements-dev.txt pytest-cov
       - name: Run tests
         env:
           PYTHONPATH: ".:app"

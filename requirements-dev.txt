@@ -10,3 +10,4 @@ pytest-timeout==2.3.1         # bounds hardware/integration tests
 pytest-mock==3.14.0
 pytest-cov==6.1.1
 respx==0.22.0                 # httpx mocking — tests/test_system_routes.py, test_depth_proxy_routes.py
+numpy>=1.24.0,<3.0          # tests/test_realsense_mux.py, test_depth_contract.py
