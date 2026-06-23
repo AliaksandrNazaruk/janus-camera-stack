@@ -7,11 +7,11 @@ packet-loss rates.  Data feeds Prometheus counters/histograms.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.middleware.rate_limit import require_rate_limit
 from app.core.viewer_auth import require_viewer

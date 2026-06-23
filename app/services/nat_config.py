@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from app.core.admin import admin_token
 from app.core.settings import get_settings
-from app.services.system import atomic_write_text, run as run_cmd
+from app.services.system import atomic_write_text
 from app.config import DEVICES, PORTS
 
 logger = logging.getLogger(__name__)

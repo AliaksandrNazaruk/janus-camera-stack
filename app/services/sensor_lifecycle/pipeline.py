@@ -24,7 +24,6 @@ from app.services.mountpoint_allocator import (
     migrate_color_key,
     set_desired,
     Allocation,
-    LOCAL_SERIAL,
 )
 from app.services.sensor_lifecycle.contract_env import (
     _ensure_default_tuning_env,

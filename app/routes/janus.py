@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
-from typing import Dict, List, Literal, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.core.admin import require_admin
 from app.core.settings import get_settings

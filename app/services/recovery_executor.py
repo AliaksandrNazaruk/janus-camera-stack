@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 import time
 from typing import TYPE_CHECKING
 
@@ -27,7 +26,7 @@ from app.services.fdir_events import Domain, RecoveryAction, Severity
 # TB-C1: a restart makes the stream stale; quiesce the stream-staleness watchdogs for the
 # restart's timeout + a settle margin so they don't re-escalate the staleness we just caused.
 _QUIESCE_SETTLE_SEC = 15.0
-from app.services.system import atomic_write_text
+from app.services.system import atomic_write_text  # noqa: E402
 
 if TYPE_CHECKING:
     from app.services.recovery_policy import LadderLevel
