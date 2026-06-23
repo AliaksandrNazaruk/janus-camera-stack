@@ -76,6 +76,7 @@ from app.application.stream_bindings.fleet_reconcile import fleet_reconcile
 from app.application.stream_bindings.get_host_key import get_host_key
 from app.application.stream_bindings.get_tuning import get_tuning
 from app.application.stream_bindings.get_modes import get_modes
+from app.application.stream_bindings.get_depth import get_depth, get_depth_frame
 from app.application.stream_bindings.list_bindings import list_bindings
 from app.application.stream_bindings.list_nodes import list_nodes
 from app.application.stream_bindings.provision_node import provision_node
@@ -148,6 +149,8 @@ __all__ = [
     "ensure_janus",
     "get_tuning",
     "get_modes",
+    "get_depth",
+    "get_depth_frame",
     "set_tuning",
     "activate_local",
     "activate_remote",

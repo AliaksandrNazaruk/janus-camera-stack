@@ -13,7 +13,7 @@ pytestmark = pytest.mark.integration
 
 
 # Parent of the camera_bringup package, so `python -m camera_bringup` resolves.
-# Relative to __file__ (move-invariant) — was a hardcoded "/opt/janus-camera-page",
+# Relative to __file__ (move-invariant) — was a hardcoded "/home/boris/robot",
 # which broke when the package moved under janus_camera_page/.
 REPO_ROOT = str(Path(__file__).resolve().parents[3])
 

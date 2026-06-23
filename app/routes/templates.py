@@ -316,7 +316,7 @@ def camera_hosts_page(request: Request) -> HTMLResponse:
 # Page is plain HTML (like camera_hosts.html); the data it reads (/api/v1/ui/fleet)
 # and every action it triggers (/api/v1/admin/*) are admin-gated server-side.
 # Assets are precompiled + self-hosted under /static/console (scripts/build_console.sh).
-@router.get("/console.html", include_in_schema=False)          # canonical (console.example.com/console.html)
+@router.get("/console.html", include_in_schema=False)          # canonical (console.your-domain.example/console.html)
 @router.get("/operator_console.html", include_in_schema=False)  # alias
 def operator_console_page(request: Request) -> HTMLResponse:
     settings = get_settings()

@@ -16,7 +16,7 @@ Type=oneshot
 # flickers к inactive immediately после exit.
 RemainAfterExit=yes
 User=boris
-WorkingDirectory=/opt/janus-camera-page
+WorkingDirectory=/home/boris/robot/janus_camera_page
 # Use system python3 — matches janus-camera-page.service convention.
 # All app.services imports resolve from WorkingDirectory.
 ExecStart=/usr/bin/python3 -m app.tools.sensor_reconcile

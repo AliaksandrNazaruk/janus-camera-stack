@@ -201,7 +201,7 @@ def initialize(serial: str, sensor: str, request: Request):
         "mountpoint_id": result.mountpoint_id,
         "rtp_port": result.rtp_port,
         # Sprint X4: canonical paths without /api/v1 prefix. Browser resolves
-        # relative to the current host (cameras.example.com).
+        # relative to the current host (cameras.your-domain.example).
         "viewer_url": f"/cameras/{serial}/{sensor}/viewer.html",
         "config_url": f"/cameras/{serial}/{sensor}/camera_config.html",
     }

@@ -50,7 +50,7 @@ class TestEnvOverride:
             monkeypatch.delenv(var, raising=False)
         import camera_bringup.spec
         importlib.reload(camera_bringup.spec)
-        assert str(camera_bringup.spec.ROBOT_HOME) == "/opt/janus-camera-page"
+        assert str(camera_bringup.spec.ROBOT_HOME) == "/home/boris/robot"
         assert camera_bringup.spec.UDEV_RULES_DIR == "/etc/udev/rules.d"
         # Default instance = "cam-rgb" — lock file per-instance
         assert camera_bringup.spec.LOCK_FILE == "/run/camera_bringup-cam-rgb.lock"

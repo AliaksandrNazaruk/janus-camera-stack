@@ -36,7 +36,7 @@ BOOTSTRAP = f"{REMOTE_DIR}/bootstrap.sh"
 NODE_BUNDLE_TAR = os.getenv("NODE_BUNDLE_TAR", "/tmp/camera-node-bundle.tar.gz")  # built bundle, gateway side
 GATEWAY_LAN_IP = os.getenv("GATEWAY_LAN_IP", "192.168.1.10")
 NODE_SSH_USER = os.getenv("NODE_SSH_USER", "boris")
-NODE_SSH_KEY = os.getenv("NODE_SSH_KEY", "/opt/.ssh/id_ed25519")
+NODE_SSH_KEY = os.getenv("NODE_SSH_KEY", "/home/boris/.ssh/id_ed25519")
 # (G5: removed the dead global NODE_AGENT_TOKEN import-time capture — unused; per-node tokens are minted
 # into the secret store during provisioning, never read from a process-wide env var.)
 

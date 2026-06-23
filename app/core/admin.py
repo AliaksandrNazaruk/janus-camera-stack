@@ -8,7 +8,7 @@ from fastapi import HTTPException, Request
 
 def admin_token() -> str:
     """Current admin token, read at CALL time (not import) so env/config load order can't
-    freeze a stale value. (See docs/KNOWN_LIMITATIONS.md D4.)"""
+    freeze a stale value. (See docs/REMAINING_ARCHITECTURE_DEBT.md D4.)"""
     return os.getenv("CAM_ADMIN_TOKEN", "change-me")
 
 

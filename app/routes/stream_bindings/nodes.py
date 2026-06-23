@@ -28,6 +28,7 @@ from app.application.stream_bindings import (
     LocalNodeNoHostKey,
     LocalNodeNotRemovable,
     MaintenanceLocalRejected,
+    NodeAgentError,
     NodeBundleMissing,
     NodeNotFound,
     NodeRegistrationInvalid,
@@ -43,6 +44,8 @@ from app.application.stream_bindings import (
     check_node as check_node_uc,
     confirm_host_key as confirm_host_key_uc,
     delete_node as delete_node_uc,
+    get_depth as get_depth_uc,
+    get_depth_frame as get_depth_frame_uc,
     get_host_key as get_host_key_uc,
     list_nodes as list_nodes_uc,
     provision_node as provision_node_uc,
@@ -102,6 +105,27 @@ def check_node(req: NodeCheckRequest) -> dict:
         return check_node_uc(CheckNodeCommand(node_id=req.node_id, bind_state_path=_core.BIND_STATE_PATH))
     except NodeNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/nodes/{node_id}/depth",
+            summary="Point depth (metres) at (x,y) from a node's camera (local mux, or remote via its agent)")
+def get_node_depth(node_id: str, x: float, y: float, aligned: bool = False) -> dict:
+    # No _RL: a point query is tiny + meant for frequent polling. Routes by node_id —
+    # local node → its own mux; remote node → its agent → that node's loopback mux.
+    try:
+        return get_depth_uc(node_id, x, y, aligned=aligned, bind_state_path=_core.BIND_STATE_PATH)
+    except NodeAgentError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.get("/nodes/{node_id}/depth/frame", dependencies=[_RL],
+            summary="Full depth frame (base64 float32 metres) from a node's camera")
+def get_node_depth_frame(node_id: str) -> dict:
+    # _RL here: the frame is ~600 KB base64 — rate-cap it (point queries above are exempt).
+    try:
+        return get_depth_frame_uc(node_id, bind_state_path=_core.BIND_STATE_PATH)
+    except NodeAgentError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.post("/nodes/{node_id}/provision", dependencies=[_RL],

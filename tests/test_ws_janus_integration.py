@@ -73,7 +73,7 @@ class TestWSOriginValidation:
     def test_allows_techvision_origin(self):
         from app.services.ws_proxy import _validate_ws_origin
         ws = MagicMock()
-        ws.headers = {"origin": "https://panel.example.com"}
+        ws.headers = {"origin": "https://panel.your-domain.example"}
         assert _validate_ws_origin(ws) is True
 
     def test_rejects_foreign_origin(self):

@@ -19,8 +19,8 @@ WATCHED_FILES = [
     "/etc/modprobe.d/uvcvideo.conf",
     # L0 НЕ должен пересекаться с этими (boundary watchlist)
     "/etc/robot/cam-rgb.env",                              # owned by L4
-    "/opt/janus-camera-page/hw_reset_realsense.py",  # deprecated, owned by L4 historical
-    "/opt/janus-camera-page/.venv/pyvenv.cfg",                  # shared venv, L0 не трогает
+    "/home/boris/robot/janus_camera_page/hw_reset_realsense.py",  # deprecated, owned by L4 historical
+    "/home/boris/robot/.venv/pyvenv.cfg",                  # shared venv, L0 не трогает
 ]
 
 
@@ -65,7 +65,7 @@ class TestBoundaryRespect:
         # Допустимые префиксы куда L0 может писать
         from camera_bringup.spec import FINGERPRINT_DIR, HMAC_SECRET_DIR
         ALLOWED_WRITE_PREFIXES = (
-            "/opt/janus-camera-page/camera_bringup/",   # L0 source + venv + hw_reset
+            "/home/boris/robot/camera_bringup/",   # L0 source + venv + hw_reset
             FINGERPRINT_DIR,                        # /var/lib/camera/
             HMAC_SECRET_DIR,                        # /etc/camera_bringup/ (HMAC secret)
             "/etc/udev/rules.d/",                   # naming-scope: только наши N rules

@@ -13,6 +13,8 @@ Endpoints:
   GET  /tuning?sensor=S          -> {width,height,fps,rotation,bitrate_kbps}  (X-Node-Token)
   POST /tuning?sensor=S          -> write rs-S.tuning.env + restart rs-stream@S (X-Node-Token)
   GET  /probe_devices            -> realsense probe JSON                 (X-Node-Token)
+  GET  /depth?x=&y=&aligned=     -> point depth (metres) — proxies local mux  (X-Node-Token)
+  GET  /depth/frame              -> full depth frame (base64) — proxies local mux (X-Node-Token)
 
 Security: bind + token come from /etc/robot/node-agent.env. Reachable-only-from-
 gateway (firewall) + a strong token are P3 hardening; an unset token logs a
@@ -25,14 +27,17 @@ import json
 import os
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 _LOOPBACK_BINDS = ("127.0.0.1", "localhost", "::1")
 
 PORT = int(os.getenv("NODE_AGENT_PORT", "8901"))
 BIND = os.getenv("NODE_AGENT_BIND", "0.0.0.0")          # P3: bind to the node LAN IP + firewall
 TOKEN = os.getenv("NODE_AGENT_TOKEN", "")
+MUX_URL = os.getenv("NODE_MUX_URL", "http://127.0.0.1:8000")  # the node's LOCAL mux (loopback)
 PROBE = os.getenv("NODE_PROBE_CLI", "/usr/local/bin/realsense_probe_cli.py")
 VERSION_FILE = os.getenv("NODE_BUNDLE_VERSION_FILE", "/etc/robot/node-bundle.version")
 SENSORS = ("color", "depth", "ir1", "ir2")
@@ -147,14 +152,32 @@ def _list_modes(sensor: str) -> list:
     return []
 
 
+def _mux_fetch(path: str, query: dict):
+    """GET ``path`` from the node's LOCAL mux (loopback). Returns (status, body_bytes,
+    content_type) — a raw passthrough so a depth frame is not re-encoded. The mux is
+    NEVER on the LAN; only this (token-gated) agent reaches it."""
+    qs = urlencode({k: v for k, v in query.items() if v not in (None, "")})
+    url = MUX_URL.rstrip("/") + path + (("?" + qs) if qs else "")
+    try:
+        with urllib.request.urlopen(url, timeout=15) as r:  # noqa: S310 (loopback only)
+            return r.status, r.read(), r.headers.get("Content-Type", "application/json")
+    except urllib.error.HTTPError as e:
+        return e.code, (e.read() or b'{"error":"mux error"}'), "application/json"
+    except Exception as e:  # noqa: BLE001
+        return 502, json.dumps({"error": "mux unreachable: %s" % e}).encode(), "application/json"
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_a):  # quiet
         pass
 
     def _send(self, code: int, obj: dict) -> None:
         body = json.dumps(obj).encode()
+        self._send_raw(code, body, "application/json")
+
+    def _send_raw(self, code: int, body: bytes, content_type: str) -> None:
         self.send_response(code)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -195,6 +218,22 @@ class Handler(BaseHTTPRequestHandler):
             if sensor not in SENSORS:
                 return self._send(400, {"error": "invalid sensor %r" % sensor})
             self._send(200, {"sensor": sensor, "modes": _list_modes(sensor)})
+        elif path == "/depth":
+            # Point depth — token-gated proxy of the node's LOCAL mux. depth is the depth
+            # stream (no sensor param); x/y are the mux's coords (0..100 percent).
+            if not self._authed():
+                return self._send(403, {"error": "forbidden"})
+            q = parse_qs(urlparse(self.path).query)
+            code, body, ct = _mux_fetch("/depth", {"x": q.get("x", ["50"])[0],
+                                                   "y": q.get("y", ["50"])[0],
+                                                   "aligned": q.get("aligned", [None])[0]})
+            self._send_raw(code, body, ct)
+        elif path == "/depth/frame":
+            # Full depth frame — raw base64 passthrough from the local mux (no re-encode).
+            if not self._authed():
+                return self._send(403, {"error": "forbidden"})
+            code, body, ct = _mux_fetch("/depth/frame", {"format": "json"})
+            self._send_raw(code, body, ct)
         else:
             self._send(404, {"error": "not found"})
 

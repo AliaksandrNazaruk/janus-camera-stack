@@ -13,7 +13,7 @@ Invariants:
   • Audit trail — every decision logged to stdout (journald captures it).
 
 Run manually for debugging:
-    cd /opt/janus-camera-page
+    cd /home/boris/robot/janus_camera_page
     python3 -m app.tools.sensor_reconcile --dry-run
 """
 from __future__ import annotations

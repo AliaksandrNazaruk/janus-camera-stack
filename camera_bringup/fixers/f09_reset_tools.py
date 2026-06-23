@@ -2,7 +2,7 @@
 
 С 2026-06-14 все артефакты L0-owned (см. CONTRACT.md §10):
   - hw_reset_realsense.py в camera_bringup/ (НЕ janus_camera_page/)
-  - pyrealsense2 в camera_bringup/.venv (НЕ shared /opt/janus-camera-page/.venv)
+  - pyrealsense2 в camera_bringup/.venv (НЕ shared /home/boris/robot/.venv)
   - shebang скрипта указывает на L0 venv
 
 Что fixer делает:

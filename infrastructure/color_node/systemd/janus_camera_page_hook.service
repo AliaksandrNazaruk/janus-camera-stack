@@ -8,7 +8,7 @@ StartLimitBurst=5
 [Service]
 Type=simple
 User=boris
-WorkingDirectory=/opt/janus-camera-page
+WorkingDirectory=/home/boris/robot/janus_camera_page
 Environment="PYTHONUNBUFFERED=1"
 Environment="ROBOT_URL=http://127.0.0.1:8110/joystick/frame"
 Environment="LOG_LEVEL=INFO"

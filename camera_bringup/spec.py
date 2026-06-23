@@ -15,7 +15,7 @@
 Все hardcoded пути могут быть переопределены через ENV vars (12-factor
 compliance — для деплоя на других узлах или в тестовой среде):
 
-  CAMERA_BRINGUP_ROBOT_HOME    — корень проекта (default /opt/janus-camera-page)
+  CAMERA_BRINGUP_ROBOT_HOME    — корень проекта (default /home/boris/robot)
   CAMERA_BRINGUP_HOME          — корень L0 (default $ROBOT_HOME/camera_bringup)
   CAMERA_BRINGUP_FINGERPRINT   — fingerprint.json path
   CAMERA_BRINGUP_UDEV_DIR      — udev rules dir (default /etc/udev/rules.d)
@@ -30,7 +30,7 @@ from pathlib import Path
 
 # ── Environment-overridable roots ─────────────────────────────────────
 
-ROBOT_HOME = Path(os.environ.get("CAMERA_BRINGUP_ROBOT_HOME", "/opt/janus-camera-page"))
+ROBOT_HOME = Path(os.environ.get("CAMERA_BRINGUP_ROBOT_HOME", "/home/boris/robot"))
 BRINGUP_HOME = Path(os.environ.get(
     "CAMERA_BRINGUP_HOME",
     str(ROBOT_HOME / "camera_bringup"),
@@ -210,4 +210,4 @@ HMAC_SECRET_DIR = os.path.dirname(HMAC_SECRET_PATH)
 # Python interpreter в котором установлен pyrealsense2 (нужно для serial extraction).
 # Указывает на L0 dedicated venv (см. L0_VENV_PYTHON ниже).
 # DEPRECATED alias — используйте L0_VENV_PYTHON напрямую.
-PYREALSENSE_PYTHON = "/opt/janus-camera-page/camera_bringup/.venv/bin/python3"
+PYREALSENSE_PYTHON = "/home/boris/robot/camera_bringup/.venv/bin/python3"

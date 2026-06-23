@@ -11,19 +11,16 @@ from app.core.settings import get_settings
 from app.routes import register_routes
 from app.config import DEVICES, PORTS
 
+# frame-ancestors requires exact origin-s, not CIDR notation.
 # Default: the two LAN nodes that may embed the player.
 # Override via CSP_FRAME_ANCESTORS_LAN env var for different deployments.
-# Default: the two LAN nodes that may embed the player. To allow a PUBLIC origin
-# (e.g. a reverse-proxied domain), set CSP_FRAME_ANCESTORS_LAN to a space-separated
-# list, e.g. "https://cameras.your-domain.example http://192.168.1.10:8900".
 _FRAME_ANCESTORS_LAN = os.environ.get(
     "CSP_FRAME_ANCESTORS_LAN",
     f"http://{DEVICES.HOST_LAN_IP}:{PORTS.COLOR_CAMERA} "
-    f"http://{DEVICES.DEPTH_CAMERA_IP}:{PORTS.COLOR_CAMERA}",
+    f"http://{DEVICES.DEPTH_CAMERA_IP}:{PORTS.COLOR_CAMERA} "
+    f"https://blupassionsystem.de:8443 "
+    f"http://212.227.150.180:3456",
 )
-# Optional public WebSocket origin(s) for connect-src (e.g. "wss://cameras.your-domain.example").
-# Empty by default — a same-origin / LAN deployment needs nothing here.
-_CONNECT_SRC_PUBLIC = os.environ.get("CSP_CONNECT_SRC_PUBLIC", "")
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -40,8 +37,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Request-ID"] = req_id
         response.headers["X-Content-Type-Options"] = "nosniff"
         # X-Frame-Options removed: CSP frame-ancestors is the modern
-        # replacement and already allows cross-origin embedding from a
-        # configured frame-ancestor.  Having both creates a contradiction
+        # replacement and already allows cross-origin embedding from
+        # *.your-domain.example.  Having both creates a contradiction
         # (SAMEORIGIN vs cross-origin frame-ancestors).
         # The design-system operator console (/console.html + alias) renders icons via
         # Lucide, which sets inline STYLE ATTRIBUTES on the SVGs it injects — a nonce
@@ -63,10 +60,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"ws://{DEVICES.HOST_LAN_IP}:* ws://{DEVICES.DEPTH_CAMERA_IP}:* "
             f"ws://127.0.0.1:* ws://localhost:* "
             f"wss://{DEVICES.HOST_LAN_IP}:* wss://{DEVICES.DEPTH_CAMERA_IP}:* "
-            f"{_CONNECT_SRC_PUBLIC}; "
+            f"wss://*.your-domain.example; "
             "img-src 'self' data: blob:; "
             "media-src 'self' blob:; "
-            f"frame-ancestors 'self' {_FRAME_ANCESTORS_LAN}"
+            f"frame-ancestors 'self' https://*.your-domain.example {_FRAME_ANCESTORS_LAN}"
         )
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=()"

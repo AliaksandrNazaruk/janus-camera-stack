@@ -1,4 +1,4 @@
-#!/opt/janus-camera-page/camera_bringup/.venv/bin/python3
+#!/home/boris/robot/camera_bringup/.venv/bin/python3
 """Firmware-level hardware reset for Intel RealSense D435/D435i.
 
 Sends a vendor-specific USB control transfer that reboots the camera's

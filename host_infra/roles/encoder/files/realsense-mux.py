@@ -510,6 +510,25 @@ class DepthSampler:
         return {"depth_m": depth_val, "i": i, "j": j, "w": W, "h": H,
                 "ts": ts, "age_ms": age_ms, "stale": stale}
 
+    def frame(self) -> dict:
+        """Full latest depth frame (float32 metres, sensor-native H×W) + meta.
+
+        Returns the SAME array sample() indexes, so frame[i, j] matches /depth at
+        that normalized coord. Used by robot_service grasp analysis via the gateway
+        (DEPTH_OVER_NODES: robot_service owns perception). update() replaces the
+        array wholesale, so the reference grabbed under the lock is safe to return
+        without copying."""
+        with self._lock:
+            arr = self._depth_m
+            shape = self._shape
+            ts = self._updated_at
+        if arr is None or shape is None:
+            raise RuntimeError("no depth frame yet")
+        H, W = shape
+        age_ms = int((time.time() - ts) * 1000) if ts > 0 else -1
+        stale = age_ms >= DEPTH_STALE_MS
+        return {"arr": arr, "w": W, "h": H, "ts": ts, "age_ms": age_ms, "stale": stale}
+
     def sample_aligned(self, x_pct: float, y_pct: float) -> dict:
         """P1-CV-001: aligned click-to-depth.
 
@@ -683,6 +702,33 @@ def _start_http_server(sampler: DepthSampler, host: str, port: int) -> None:
             out["aligned"] = s.get("aligned", False)
             out["reason"] = s.get("reason")
         return out
+
+    @app.get("/depth/frame")
+    async def depth_frame(format: str = "json"):
+        """Full depth frame (float32 metres, base64) for grasp analysis.
+
+        robot_service owns perception (DEPTH_OVER_NODES Track 3); the gateway +
+        node-agent proxy this endpoint. Response keys {width,height,dtype,timestamp,
+        data} match robot_service decode_depth_frame(). Same coordinate contract as
+        /depth — frame[i, j] equals /depth at that normalized point."""
+        import base64 as b64mod
+        try:
+            f = sampler.frame()
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        raw_bytes = f["arr"].tobytes()
+        if format == "raw":
+            from fastapi import Response
+            return Response(
+                content=raw_bytes, media_type="application/octet-stream",
+                headers={"X-Width": str(f["w"]), "X-Height": str(f["h"]),
+                         "X-Dtype": "float32", "X-Timestamp": str(f["ts"])},
+            )
+        return {
+            "width": f["w"], "height": f["h"], "dtype": "float32",
+            "timestamp": f["ts"], "age_ms": f["age_ms"], "stale": f["stale"],
+            "data": b64mod.b64encode(raw_bytes).decode("ascii"),
+        }
 
     @app.get("/healthz")
     async def healthz():

@@ -80,6 +80,24 @@ class LocalNodeClientAdapter:
         except Exception as e:
             return RestartResult(False, f"local stop failed: {e}")
 
+    def get_depth(self, x: float, y: float, *, aligned: bool = False) -> dict:
+        """Point depth at (x,y) from the LOCAL mux directly — the gateway is co-located,
+        so no agent hop (mirrors how local tuning/modes are handled directly)."""
+        from app.core.settings import get_settings
+        base = get_settings().realsense_mux_url.rstrip("/")
+        url = f"{base}/depth?x={x}&y={y}" + ("&aligned=true" if aligned else "")
+        r = httpx.get(url, timeout=10.0)
+        r.raise_for_status()
+        return r.json()
+
+    def get_depth_frame(self) -> dict:
+        """Full depth frame from the LOCAL mux directly."""
+        from app.core.settings import get_settings
+        base = get_settings().realsense_mux_url.rstrip("/")
+        r = httpx.get(f"{base}/depth/frame?format=json", timeout=25.0)
+        r.raise_for_status()
+        return r.json()
+
 
 class RemoteNodeClientStub:
     """cam55 (any remote producer) — OFFLINE stub. NEVER runs a local command and
@@ -117,6 +135,12 @@ class RemoteNodeClientStub:
         raise RuntimeError(f"node {self.node.node_id!r} agent unreachable (bootstrap_required)")
 
     def get_modes(self, sensor: str) -> dict:
+        raise RuntimeError(f"node {self.node.node_id!r} agent unreachable (bootstrap_required)")
+
+    def get_depth(self, x: float, y: float, *, aligned: bool = False) -> dict:
+        raise RuntimeError(f"node {self.node.node_id!r} agent unreachable (bootstrap_required)")
+
+    def get_depth_frame(self) -> dict:
         raise RuntimeError(f"node {self.node.node_id!r} agent unreachable (bootstrap_required)")
 
 
@@ -184,6 +208,24 @@ class RealNodeClient:
         console can offer a real dropdown for a remote node. Raises on HTTP error."""
         url = f"http://{self.node.host}:{self._port}/modes?sensor={sensor}"
         r = httpx.get(url, headers=self._headers(), timeout=20.0)
+        r.raise_for_status()
+        return r.json()
+
+    def get_depth(self, x: float, y: float, *, aligned: bool = False) -> dict:
+        """Point depth at (x,y) from the node's depth camera — the node-agent proxies its
+        OWN loopback mux (the mux is never on the LAN). Returns the mux's shape
+        ({depth (metres), age_ms, stale, ...}). Raises on HTTP error."""
+        url = f"http://{self.node.host}:{self._port}/depth?x={x}&y={y}"
+        if aligned:
+            url += "&aligned=true"
+        r = httpx.get(url, headers=self._headers(), timeout=10.0)
+        r.raise_for_status()
+        return r.json()
+
+    def get_depth_frame(self) -> dict:
+        """Full depth frame (base64 float32 metres) from the node's depth camera via its agent."""
+        url = f"http://{self.node.host}:{self._port}/depth/frame"
+        r = httpx.get(url, headers=self._headers(), timeout=25.0)
         r.raise_for_status()
         return r.json()
 

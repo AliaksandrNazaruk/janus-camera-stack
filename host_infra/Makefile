@@ -65,7 +65,7 @@ status:
 	@printf "  TURN cred expiry: "; sudo grep -oE 'turn_user\s*=\s*"[0-9]+' /opt/janus/etc/janus/janus.jcfg 2>/dev/null | grep -oE '[0-9]+' | head -1 | xargs -I{} date -d @{} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo '?'
 	@echo ""
 	@echo "=== production camera state (L0 view) ==="
-	@cd /opt/janus-camera-page && python3 -m camera_bringup verify --only smoke fingerprint 2>/dev/null | grep -E "OK|WARN|FAIL"
+	@cd /home/boris/robot/janus_camera_page && python3 -m camera_bringup verify --only smoke fingerprint 2>/dev/null | grep -E "OK|WARN|FAIL"
 
 lint:
 	@which ansible-lint >/dev/null 2>&1 && ansible-lint site.yml || echo "ansible-lint not installed (apt install ansible-lint)"
