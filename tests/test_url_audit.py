@@ -95,6 +95,8 @@ _SMOKE_EXCLUDE_PREFIXES = {
     # Routes that call out to Janus over HTTP (block in test without upstream)
     "/janus",                             # Janus proxy
     "/healthz",                           # checks Janus reachability
+    "/health/stream",                     # probes rtp_ingest + Janus (503 if down)
+    "/api/v1/admin/reconcile",            # drift reconcile calls the Janus admin API
     "/janus/healthz", "/janus/nat", "/janus-ws", "/janus/ws",
     "/client-config",                     # loads NAT config (httpx to Janus admin)
     "/api/v1/admin/dashboard",            # aggregates Janus mountpoint list
