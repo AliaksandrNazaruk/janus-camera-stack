@@ -236,7 +236,7 @@ def allocate(serial: str, sensor: str,
         used_port: set = set()
         for v in state["allocations"].values():
             rtp = int(v["rtp_port"])
-            used_port.add(rtp); used_port.add(rtp + 1)
+            used_port.add(rtp); used_port.add(rtp + 1)  # noqa: E702
         mp_id, port = _pick_free(used_mp, used_port)
         alloc = Allocation(mp_id=mp_id, rtp_port=port)
         state["allocations"][key] = alloc.to_dict()

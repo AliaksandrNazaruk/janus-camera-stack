@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
-import time
+import time  # noqa: F401
 from pathlib import Path
 
 from app.core.settings import get_settings

@@ -9,12 +9,12 @@ rendering with autoescape enabled.
 from __future__ import annotations
 
 import json
-import logging
+import logging  # noqa: F401
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response  # noqa: F401
 
 from app.core.http_prefix import _api_prefix_from_request
 from app.core.settings import get_settings

@@ -58,7 +58,7 @@ class _DeviceDefaults:
     environment variables in production — no real infrastructure IPs are
     committed to source control.
     """
-    DEPTH_CAMERA_IP: str = "127.0.0.1"   # override via DEPTH_CAM_URL env
+    DEPTH_CAMERA_IP: str = field(default_factory=lambda: os.environ.get("DEPTH_CAMERA_IP", "127.0.0.1"))
     TURN_HOST: str = ""                   # must be set via TURN_HOST env
     # Derived from the system (egress IP) so it is never a hardcoded LAN address;
     # HOST_LAN_IP env overrides for multi-homed hosts. See _host_lan_ip().

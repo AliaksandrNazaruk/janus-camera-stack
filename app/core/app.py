@@ -17,9 +17,7 @@ from app.config import DEVICES, PORTS
 _FRAME_ANCESTORS_LAN = os.environ.get(
     "CSP_FRAME_ANCESTORS_LAN",
     f"http://{DEVICES.HOST_LAN_IP}:{PORTS.COLOR_CAMERA} "
-    f"http://{DEVICES.DEPTH_CAMERA_IP}:{PORTS.COLOR_CAMERA} "
-    f"https://blupassionsystem.de:8443 "
-    f"http://212.227.150.180:3456",
+    f"http://{DEVICES.DEPTH_CAMERA_IP}:{PORTS.COLOR_CAMERA}",
 )
 
 

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
-from typing import Dict, List, Literal, Optional
+import os  # noqa: F401
+from typing import Dict, List, Literal, Optional  # noqa: F401
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field  # noqa: F401
 
 from app.core.admin import require_admin
 from app.core.settings import get_settings

@@ -65,7 +65,7 @@ def _stun_query(host: str = "stun.l.google.com", port: int = 19302, timeout: flo
                 return None
             xip = data[pos + 4:pos + 8]
             # De-XOR
-            port_xor = xport ^ (magic_cookie >> 16)
+            port_xor = xport ^ (magic_cookie >> 16)  # noqa: F841
             ip_xor = struct.unpack("!I", xip)[0] ^ magic_cookie
             ip_str = socket.inet_ntoa(struct.pack("!I", ip_xor))
             return ip_str

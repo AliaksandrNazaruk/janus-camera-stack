@@ -49,6 +49,7 @@ jobs:
           # Pin the LAN topology the security/CSP tests assert against, so the
           # suite is deterministic regardless of the runner's own IP.
           HOST_LAN_IP: "192.168.1.10"
+          DEPTH_CAMERA_IP: "192.168.1.55"
           DEPTH_CAM_URL: "http://192.168.1.55:8900"
         run: |
           python -m pytest tests/ --ignore=tests/e2e \

@@ -87,7 +87,7 @@ def test_prod_public_turn_host_passes(monkeypatch):
     monkeypatch.setattr(app.config, "DEVICES", SimpleNamespace(HOST_LAN_IP="192.168.1.10"))
     # public IP and DNS name both acceptable
     assert "TURN_HOST" not in " ".join(
-        sc.production_issues(_ok_settings(turn_host="82.165.177.194")))
+        sc.production_issues(_ok_settings(turn_host="turn-public.example.org")))
     assert "TURN_HOST" not in " ".join(
         sc.production_issues(_ok_settings(turn_host="turn.example.com")))
 

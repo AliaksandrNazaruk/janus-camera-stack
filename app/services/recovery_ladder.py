@@ -24,14 +24,14 @@ Every action is logged via fdir_events.emit().
 
 from __future__ import annotations
 
-import fcntl
-import json
+import fcntl  # noqa: F401
+import json  # noqa: F401
 import logging
 import os
-import subprocess
+import subprocess  # noqa: F401
 import time
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: F401
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -43,7 +43,7 @@ from app.services.fdir_events import (
     emit,
 )
 from app.services import system_mode
-from app.services.system import atomic_write_text, run as run_cmd
+from app.services.system import atomic_write_text, run as run_cmd  # noqa: F401
 
 logger = logging.getLogger("fdir.ladder")
 
@@ -60,7 +60,7 @@ _REBOOT_MARKER_PATH = _REBOOT_COUNT_DIR / "last_reboot_request"
 # Sprint D extraction (Phase 1): policy constants moved to recovery_policy.py.
 # Re-exported here for backward compat — tests + callers monkeypatch
 # _DEDUP_WINDOW_SEC and similar via this module.
-from app.services.recovery_policy import (
+from app.services.recovery_policy import (  # noqa: E402
     DEDUP_WINDOW_SEC as _DEDUP_WINDOW_SEC,
     REBOOT_COUNTER_RESET_SEC as _REBOOT_COUNTER_RESET_SEC_POLICY,
 )
@@ -107,7 +107,7 @@ def _default_ladder() -> List[LadderLevel]:
 # Persistence instance constructed lazily (paths may be monkeypatched
 # BEFORE first call).
 
-from app.services.recovery_persistence import RecoveryPersistence
+from app.services.recovery_persistence import RecoveryPersistence  # noqa: E402
 
 _persistence_instance: Optional[RecoveryPersistence] = None
 

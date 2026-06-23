@@ -70,11 +70,16 @@ class TestWSOriginValidation:
         ws.headers = {"origin": "http://localhost:3000"}
         assert _validate_ws_origin(ws) is True
 
-    def test_allows_techvision_origin(self):
+    def test_allows_configured_public_origin(self):
+        from unittest.mock import patch
         from app.services.ws_proxy import _validate_ws_origin
         ws = MagicMock()
-        ws.headers = {"origin": "https://panel.example.com"}
-        assert _validate_ws_origin(ws) is True
+        ws.headers = {"origin": "https://panel.your-domain.example"}
+        # A public origin is allowed only when CORS_ORIGIN_REGEX is configured
+        # for it (the default regex is localhost + LAN only).
+        fake = MagicMock(cors_origin_regex=r"^https://[\w-]+\.your-domain\.example$")
+        with patch("app.services.ws_proxy.get_settings", return_value=fake):
+            assert _validate_ws_origin(ws) is True
 
     def test_rejects_foreign_origin(self):
         """Non-matching origin must be rejected."""

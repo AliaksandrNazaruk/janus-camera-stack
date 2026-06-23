@@ -323,7 +323,7 @@ class TestTurnProbeHmacIntegration:
                 "error": None, "error_detail": None,
             }
 
-        with patch("app.routes.system.get_settings", return_value=_settings_with(turn_shared_secret="secret-test-32")), \
+        with patch("app.routes.system.get_settings", return_value=_settings_with(turn_host="turn.example.com", turn_shared_secret="secret-test-32")), \
              patch("app.services.turn_probe.probe_summary", side_effect=fake_probe), \
              patch("app.services.nat_config.load_nat_config") as load_nat:
             load_nat.return_value = MagicMock(turn_user="webrtc")
@@ -346,7 +346,7 @@ class TestTurnProbeHmacIntegration:
                     "host": turn_host, "port": turn_port, "tools_available": True,
                     "error": None, "error_detail": None}
 
-        with patch("app.routes.system.get_settings", return_value=_settings_with(turn_shared_secret="", turn_pass="static-pw", turn_user="static-u")), \
+        with patch("app.routes.system.get_settings", return_value=_settings_with(turn_host="turn.example.com", turn_shared_secret="", turn_pass="static-pw", turn_user="static-u")), \
              patch("app.services.turn_probe.probe_summary", side_effect=fake_probe):
             resp = await client.get("/health/stream")
 
@@ -363,7 +363,7 @@ class TestTurnProbeHmacIntegration:
                     "host": turn_host, "port": turn_port, "tools_available": True,
                     "error": "no credentials", "error_detail": None}
 
-        with patch("app.routes.system.get_settings", return_value=_settings_with(turn_shared_secret="", turn_pass="")), \
+        with patch("app.routes.system.get_settings", return_value=_settings_with(turn_host="turn.example.com", turn_shared_secret="", turn_pass="")), \
              patch("app.services.turn_probe.probe_summary", side_effect=fake_probe):
             resp = await client.get("/health/stream")
 

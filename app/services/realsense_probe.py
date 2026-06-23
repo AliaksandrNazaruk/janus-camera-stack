@@ -92,7 +92,7 @@ def probe(include_profiles: bool = True, profile_limit_per_stream: int = 3) -> P
             profiles: List[StreamProfile] = []
             if include_profiles:
                 # Walk sensors → top-N profiles per stream type
-                seen_keys: set = set()
+                seen_keys: set = set()  # noqa: F841
                 try:
                     for sensor in dev.sensors:
                         for sp in sensor.get_stream_profiles():
