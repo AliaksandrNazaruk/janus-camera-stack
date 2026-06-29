@@ -22,7 +22,7 @@ httpx>=0.25.0,<0.29.0         # async HTTP — all Janus, proxy, and cross-node 
 pydantic>=2.5.0,<3.0
 
 # ── Observability ─────────────────────────────────────────────────────
-prometheus-client>=0.18.0,<1.0
+prometheus-client>=0.25.0,<1.0
 
 # ── WebSocket protocol ────────────────────────────────────────────────
 websockets>=12.0,<14.0        # Janus WS proxy (routes/janus.py)
