@@ -25,5 +25,17 @@
 # pyrealsense2 wheel: native binary, Python-version-specific.
 # Current hash matches CPython 3.12 cp312-cp312-manylinux2014_aarch64 wheel.
 # For Python 3.13 / other versions, hash must be regenerated.
-pyrealsense2==2.58.1.10581 \
-    --hash=sha256:1226bb06e6965cb9edb2c3d477be2ddadfcb6f60be2f2ec8649c23b19800752b
+pyrealsense2==2.58.2.10647 \
+    --hash=sha256:142cc56a9dd5f52a5b33e4c68d27e9f8a8d5511945664f493a6e52ef45871593 \
+    --hash=sha256:17c429a18ffe0512305df37f78658defa33b9414dccf90a40287010e3cbcfaf4 \
+    --hash=sha256:4730b24bfa8108d5bc1be2c4eaf723808bdd8b7500d03d7725f19071bbdf9ae2 \
+    --hash=sha256:53f54d89fa2a02f9c4edb95f5dfd4d8572d5dd313731ee7a542eb730d892e4e5 \
+    --hash=sha256:58e470ea1ece271773812d70feaa50761f63aaa1aab83bd21a7e3a5fefcaeb07 \
+    --hash=sha256:60013fd6807f47fcfd654bcfbfe5f7f5d6ecd96cb41339995a3e8db39d34bfd6 \
+    --hash=sha256:6ba16f343dde65de10d06a377aa941e403a1a6375942114b895ed4e7d4ab55d0 \
+    --hash=sha256:9556b882742ed7722b6f154ad6dd0b05e4887f0e79f519eb6d9c5b8d0663efb7 \
+    --hash=sha256:b5a66cea0bd815d7633146450205593f89739a07a3e7b6cb0bcb77a63e9f01be \
+    --hash=sha256:d53f71efc25c9d38694df17fcc5a09cdf7092af4230789db19baf96512c33e08 \
+    --hash=sha256:dccf473f29e6014704c36ff0bb658f7c8a4062c2d416313c93811ea18e150765 \
+    --hash=sha256:eca45ceacc7215e8608118791cde5d952e58178f068b98ad9fee266d5968674f \
+    --hash=sha256:f5eb955bee3e37a0f864feda560b8fc30124a70bf078557d91eba314cdc9105d
