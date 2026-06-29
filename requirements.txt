@@ -25,7 +25,7 @@ pydantic>=2.5.0,<3.0
 prometheus-client>=0.18.0,<1.0
 
 # ── WebSocket protocol ────────────────────────────────────────────────
-websockets>=12.0,<14.0        # Janus WS proxy (routes/janus.py)
+websockets>=16.0,<17.0        # Janus WS proxy (routes/janus.py)
 
 # ── Templates ─────────────────────────────────────────────────────────
 jinja2>=3.1.0,<4.0            # used by routes/templates.py (player HTML rendering)
