@@ -11,9 +11,9 @@
 # CI / Ansible deployment assumes 3.12+.
 
 # ── Web framework ─────────────────────────────────────────────────────
-fastapi>=0.138.1,<0.139.0
-uvicorn[standard]>=0.49.0,<0.50.0
-starlette>=1.3.1,<1.4.0
+fastapi>=0.141.1,<0.142.0
+uvicorn[standard]>=0.52.1,<0.53.0
+starlette>=1.4.1,<1.5.0
 
 # ── HTTP client ───────────────────────────────────────────────────────
 httpx>=0.25.0,<0.29.0         # async HTTP — all Janus, proxy, and cross-node communication
