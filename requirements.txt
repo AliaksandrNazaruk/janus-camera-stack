@@ -28,7 +28,7 @@ prometheus-client>=0.25.0,<1.0
 websockets>=16.0,<17.0        # Janus WS proxy (routes/janus.py)
 
 # ── Templates ─────────────────────────────────────────────────────────
-jinja2>=3.1.0,<4.0            # used by routes/templates.py (player HTML rendering)
+jinja2>=3.1.6,<4.0            # used by routes/templates.py (player HTML rendering)
 
 # ── Optional: depth_camera node only ─────────────────────────────────
 # Uncomment on the depth camera Raspberry Pi node:
