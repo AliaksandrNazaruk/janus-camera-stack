@@ -5,7 +5,7 @@
 -r requirements.txt
 
 pytest==8.4.2
-pytest-asyncio==0.25.3        # async route/integration tests (pytestmark = asyncio)
+pytest-asyncio==1.4.0        # async route/integration tests (pytestmark = asyncio)
 pytest-timeout==2.3.1         # bounds hardware/integration tests
 pytest-mock==3.14.0
 pytest-cov==6.1.1
